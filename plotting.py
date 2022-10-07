@@ -6,14 +6,14 @@ import pyqtgraph as pg
 from datetime import datetime
 from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 
-from GUI.config import history_dur, triggered_dur
+from config import history_dur, triggered_dur
 
 # Analog_plot ------------------------------------------------------
 
 class Analog_plot(QtGui.QWidget):
 
     def __init__(self, parent=None):
-        super(QtGui.QWidget, self).__init__(parent)
+        super().__init__(parent)
 
         # Create axis
         self.axis = pg.PlotWidget(title="Analog signal" , labels={'left':'Volts'})

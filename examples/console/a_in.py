@@ -24,6 +24,7 @@ from mcculw.device_info import DaqDeviceInfo
 try:
     from console_examples_util import config_first_detected_device
 except ImportError:
+    print('WHAT')
     from .console_examples_util import config_first_detected_device
 
 

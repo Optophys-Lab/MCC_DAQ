@@ -1,4 +1,3 @@
-# Code which runs on host computer and implements the graphical user interface.
 # Copyright (c) Thomas Akam 2018-2020.  Licenced under the GNU General Public License v3.
 
 import os
@@ -7,13 +6,13 @@ import ctypes
 import traceback
 import logging
 from pyqtgraph.Qt import QtGui, QtCore
-from serial import SerialException
-from serial.tools import list_ports
+import serial
+#from serial.tools import list_ports
 
-import GUI.config as config
-from GUI.acquisition_board import Acquisition_board
-from GUI.pyboard import PyboardError
-from GUI.plotting import Analog_plot, Digital_plot, Event_triggered_plot, Record_clock
+import config as config
+from acquisition_board import Acquisition_board
+from pyboard import PyboardError
+from plotting import Analog_plot, Digital_plot, Event_triggered_plot, Record_clock
 
 if os.name == 'nt': # Needed on windows to get taskbar icon to display correctly.
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'pyPhotometry')
@@ -32,7 +31,7 @@ def set_cbox_item(cbox, item_name):
 class Photometry_GUI(QtGui.QWidget):
 
     def __init__(self, parent=None):
-        super(QtGui.QWidget, self).__init__(parent)
+        super().__init__(parent)
         self.setWindowTitle('pyPhotometry GUI v{}'.format(config.VERSION))
         self.setGeometry(100, 100, 1000, 1080) # Left, top, width, height.
 
@@ -44,7 +43,7 @@ class Photometry_GUI(QtGui.QWidget):
         self.subject_ID = ''
         self.running = False
         self.connected = False
-        self.refresh_interval = 1000 # Interval to refresh tasks and ports when not running (ms).
+        self.refresh_interval = 1000 # Interval to refresh tasks and ports when not running (ms). #still needed?
         self.available_ports = None
         self.clipboard = QtGui.QApplication.clipboard() # Used to copy strings to computer clipboard.
 
@@ -99,7 +98,7 @@ class Photometry_GUI(QtGui.QWidget):
         self.settingsgroup_layout.addWidget(self.rate_text)
         self.settings_groupbox.setLayout(self.settingsgroup_layout)
 
-        self.mode_select.activated[str].connect(self.select_mode)
+        self.mode_select.activated[int].connect(self.select_mode)
         self.rate_text.textChanged.connect(self.rate_text_change)
 
         # Current groupbox
@@ -240,14 +239,9 @@ class Photometry_GUI(QtGui.QWidget):
             self.connect_button.setText('Disconnect')
             self.connect_button.setIcon(QtGui.QIcon("GUI/icons/disconnect.svg"))
             self.status_text.setText('Connected')
-            self.board.set_LED_current(self.current_spinbox_1.value(),self.current_spinbox_2.value())
-            self.current_spinbox_1.valueChanged.connect(
-                lambda v:self.board.set_LED_current(LED_1_current=int(v)))
-            self.current_spinbox_2.valueChanged.connect(
-                lambda v:self.board.set_LED_current(LED_2_current=int(v)))
-            self
             self.connected = True
-        except SerialException:
+
+        except serial.SerialException:
             self.status_text.setText('Connection failed')
         except PyboardError:
             self.status_text.setText('Connection failed')
@@ -377,10 +371,13 @@ class Photometry_GUI(QtGui.QWidget):
             self.record_clock.update()
 
     def refresh(self):
+        #TODO decide if this is still needed if replaced by mcc
+
         # Called regularly while not running, scan serial ports for 
         # connected boards and update ports list if changed.
-        ports = set([c[0] for c in list_ports.comports()
-                     if ('Pyboard' in c[1]) or ('USB Serial Device' in c[1])])
+        #ports = set([c[0] for c in list_ports.comports()
+                     #if ('Pyboard' in c[1]) or ('USB Serial Device' in c[1])])
+        ports = "COM5"
         if not ports == self.available_ports:
             self.port_select.clear()
             self.port_select.addItems(sorted(ports))
@@ -399,7 +396,7 @@ class Photometry_GUI(QtGui.QWidget):
     def excepthook(self, ex_type, ex_value, ex_traceback):
         '''Called when an uncaught exception occurs, shows error message and traceback in dialog.'''
         ex_str = '\n'.join(traceback.format_exception(ex_type, ex_value, ex_traceback, chain=False))
-        if ex_type == SerialException:
+        if ex_type == serial.SerialException:
             self.serial_connection_lost()
         elif ex_type == ValueError and 'ViewBoxMenu' in ex_str:
             pass # Bug in pyqtgraph when invalid string entered as axis range limit.

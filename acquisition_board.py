@@ -10,8 +10,8 @@ from inspect import getsource
 from datetime import datetime
 from time import sleep
 
-from GUI.pyboard import Pyboard, PyboardError
-from GUI.config import VERSION
+from pyboard import Pyboard, PyboardError
+from config import VERSION
 
 class Acquisition_board(Pyboard):
     '''Class for aquiring data from a micropython photometry system on a host computer.'''

@@ -1,3 +1,5 @@
 numpy
+pyside6
 pyqtgraph
 mcculw
+serial

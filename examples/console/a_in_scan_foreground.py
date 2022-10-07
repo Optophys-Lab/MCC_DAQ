@@ -43,7 +43,7 @@ def run_example():
     dev_id_list = []
     board_num = 0
     rate = 100
-    points_per_channel = 10
+    points_per_channel = 1000
     memhandle = None
 
     try:
