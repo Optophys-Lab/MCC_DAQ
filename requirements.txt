@@ -1,5 +1,4 @@
 numpy
-pyside6
+pyqt6
 pyqtgraph
-mcculw
-serial
+uldaq
