@@ -2,3 +2,4 @@ numpy
 pyqt6
 pyqtgraph
 uldaq
+mcculw
