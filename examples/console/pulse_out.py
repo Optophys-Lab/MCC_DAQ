@@ -59,8 +59,8 @@ def run_example():
                             'pulse timers')
 
         timer_num = first_chan.channel_num
-        frequency = 100
-        duty_cycle = 0.5
+        frequency = 30
+        duty_cycle = 0.15
 
         # Start the pulse timer output (optional parameters omitted)
         actual_frequency, actual_duty_cycle, _ = ul.pulse_out_start(

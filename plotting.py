@@ -1,13 +1,14 @@
 # Code which runs on host computer and implements the GUI plot panels.
 # Copyright (c) Thomas Akam 2018-2020.  Licenced under the GNU General Public License v3.
-
+import logging
 import numpy as np
+import re
 import pyqtgraph as pg
 from datetime import datetime
 # from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 from PyQt6.QtWidgets import QWidget, QCheckBox, QLabel, QSpinBox, QHBoxLayout, QVBoxLayout
 from config import history_dur, triggered_dur
-
+from GUI_utils import MCC_settings, PlotWindowEnum
 
 # Analog_plot ------------------------------------------------------
 
@@ -17,12 +18,12 @@ class Analog_plot(QWidget):
         super().__init__(parent)
 
         # Create axis
-        self.axis = pg.PlotWidget(title="Analog signal", labels={'left': 'Volts'})
-        self.legend = self.axis.addLegend(offset=(10, 10))
-        self.plot_1 = self.axis.plot(pen=pg.mkPen('g'), name='analog 1')
-        self.plot_2 = self.axis.plot(pen=pg.mkPen('r'), name='analog 2')
-        self.axis.setYRange(0, 3.3, padding=0)
-        self.axis.setXRange(-history_dur, history_dur * 0.02, padding=0)
+        self.axis = pg.PlotWidget(title=f"Analog Plot", labels={'left': 'Volts'})
+        self.legend = self.axis.addLegend(offset=(10, 10), labelTextSize = '10pt')
+
+        #self.plot_1 = self.axis.plot(pen=pg.mkPen('g'), name='analog 1')
+        #self.plot_2 = self.axis.plot(pen=pg.mkPen('r'), name='analog 2')
+
 
         # Create controls
         self.demean_checkbox = QCheckBox('De-mean plotted signals')
@@ -44,12 +45,47 @@ class Analog_plot(QWidget):
         self.vertical_layout.addLayout(self.controls_layout)
         self.vertical_layout.addWidget(self.axis)
         self.setLayout(self.vertical_layout)
+        self.log = logging.getLogger('Plotter')
 
-    def reset(self, sampling_rate):
-        history_length = int(sampling_rate * history_dur)
-        self.ADC1 = Signal_history(history_length)
-        self.ADC2 = Signal_history(history_length)
+    def reset(self, settings: MCC_settings, win_id=0):
+        history_length = int(settings.sampling_rate * history_dur)
+        nr_lines = 0
+        colors = []
+        names = []
+        for channel in settings.channel_list:
+            if channel['win'] == win_id and channel['active']:
+                nr_lines += 1
+                names.append(channel['name'])
+                colors.append(channel['color'])
+
+        self.axis.clear()
+        self.axis.setTitle(f"Analog {PlotWindowEnum(win_id).name}")
+        self.ADCs = [Signal_history(history_length)] * nr_lines
+        self.plot_lines = list()
+        for name, c in zip(names, colors):
+            self.plot_lines.append(self.axis.plot(pen=pg.mkPen(c), name=name))
         self.x = np.linspace(-history_dur, 0, history_length)  # X axis for timeseries plots.
+        try:
+            range = int(re.findall(r'\d', "settings.voltage_range")[0])
+        except:
+            range = 10
+
+        self.axis.setYRange(-range, range, padding=0)
+        self.axis.setXRange(-history_dur, history_dur * 0.02, padding=0)
+
+    def update_new(self, new_ADCs: list):
+        for ADC, new_val in zip(self.ADCs, new_ADCs):
+            ADC.update(new_val)
+
+        if self.AC_mode:
+            # Plot signals with mean removed.
+            for ADC, plot in zip(self.ADCs, self.plot_lines):
+                y = ADC.history - np.mean(ADC.history) \
+                     + self.offset_spinbox.value() / 1000
+                plot.setData(self.x, y)
+        else:
+            for ADC, plot in zip(self.ADCs, self.plot_lines):
+                plot.setData(self.x, ADC.history)
 
     def update(self, new_ADC1, new_ADC2):
         new_ADC1 = 3.3 * new_ADC1 / (1 << 15)  # Convert to Volts.

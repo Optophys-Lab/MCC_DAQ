@@ -27,6 +27,8 @@ from builtins import *  # @UnusedWildImport
 
 from ctypes import c_double, cast, POINTER, addressof, sizeof
 from time import sleep
+import json
+import struct
 
 from mcculw import ul
 from mcculw.enums import ScanOptions, FunctionType, Status
@@ -49,6 +51,7 @@ def run_example():
     board_num = 0
     rate = 100
     file_name = 'scan_data.csv'
+    file_name_binary= 'scan_data.bin'
     memhandle = None
 
     # The size of the UL buffer to create, in seconds
@@ -122,109 +125,126 @@ def run_example():
         while status == Status.IDLE:
             status, _, _ = ul.get_status(board_num, FunctionType.AIFUNCTION)
 
+        d = {'num_channels': num_chans, 'device': 'USB-1608G', "channel_list": [
+            {"id": 0,
+             "name": "Channel_0",
+             },
+            {
+                "id": 1,
+                "name": "Channel_1",
+            }]}
+        header = json.dumps(d).encode()
+        l = len(header)
+
+
+
+        with open(file_name_binary, 'wb') as fi:
+            fi.write(l.to_bytes(16, 'little'))
+            fi.write(header)
         # Create a file for storing the data
-        with open(file_name, 'w') as f:
-            print('Writing data to ' + file_name, end='')
+            with open(file_name, 'w') as f:
+                print('Writing data to ' + file_name, end='')
 
-            # Write a header to the file
-            for chan_num in range(low_chan, high_chan + 1):
-                f.write('Channel ' + str(chan_num) + ',')
-            f.write(u'\n')
+                # Write a header to the file
+                for chan_num in range(low_chan, high_chan + 1):
+                    f.write('Channel ' + str(chan_num) + ',')
+                f.write(u'\n')
 
-            # Start the write loop
-            prev_count = 0
-            prev_index = 0
-            write_ch_num = low_chan
-            while status != Status.IDLE:
-                # Get the latest counts
-                status, curr_count, _ = ul.get_status(board_num,
-                                                      FunctionType.AIFUNCTION)
+                # Start the write loop
+                prev_count = 0
+                prev_index = 0
+                write_ch_num = low_chan
+                while status != Status.IDLE:
+                    # Get the latest counts
+                    status, curr_count, _ = ul.get_status(board_num,
+                                                          FunctionType.AIFUNCTION)
 
-                new_data_count = curr_count - prev_count
+                    new_data_count = curr_count - prev_count
 
-                # Check for a buffer overrun before copying the data, so
-                # that no attempts are made to copy more than a full buffer
-                # of data
-                if new_data_count > ul_buffer_count:
-                    # Print an error and stop writing
-                    ul.stop_background(board_num, FunctionType.AIFUNCTION)
-                    print('A buffer overrun occurred')
-                    break
-
-                # Check if a chunk is available
-                if new_data_count > write_chunk_size:
-                    wrote_chunk = True
-                    # Copy the current data to a new array
-
-                    # Check if the data wraps around the end of the UL
-                    # buffer. Multiple copy operations will be required.
-                    if prev_index + write_chunk_size > ul_buffer_count - 1:
-                        first_chunk_size = ul_buffer_count - prev_index
-                        second_chunk_size = (
-                            write_chunk_size - first_chunk_size)
-
-                        # Copy the first chunk of data to the
-                        # write_chunk_array
-                        ul.scaled_win_buf_to_array(
-                            memhandle, write_chunk_array, prev_index,
-                            first_chunk_size)
-
-                        # Create a pointer to the location in
-                        # write_chunk_array where we want to copy the
-                        # remaining data
-                        second_chunk_pointer = cast(addressof(write_chunk_array)
-                                                    + first_chunk_size
-                                                    * sizeof(c_double),
-                                                    POINTER(c_double))
-
-                        # Copy the second chunk of data to the
-                        # write_chunk_array
-                        ul.scaled_win_buf_to_array(
-                            memhandle, second_chunk_pointer,
-                            0, second_chunk_size)
-                    else:
-                        # Copy the data to the write_chunk_array
-                        ul.scaled_win_buf_to_array(
-                            memhandle, write_chunk_array, prev_index,
-                            write_chunk_size)
-
-                    # Check for a buffer overrun just after copying the data
-                    # from the UL buffer. This will ensure that the data was
-                    # not overwritten in the UL buffer before the copy was
-                    # completed. This should be done before writing to the
-                    # file, so that corrupt data does not end up in it.
-                    status, curr_count, _ = ul.get_status(
-                        board_num, FunctionType.AIFUNCTION)
-                    if curr_count - prev_count > ul_buffer_count:
+                    # Check for a buffer overrun before copying the data, so
+                    # that no attempts are made to copy more than a full buffer
+                    # of data
+                    if new_data_count > ul_buffer_count:
                         # Print an error and stop writing
                         ul.stop_background(board_num, FunctionType.AIFUNCTION)
                         print('A buffer overrun occurred')
                         break
 
-                    for i in range(write_chunk_size):
-                        f.write(str(write_chunk_array[i]) + ',')
-                        write_ch_num += 1
-                        if write_ch_num == high_chan + 1:
-                            write_ch_num = low_chan
-                            f.write(u'\n')
-                else:
-                    wrote_chunk = False
+                    # Check if a chunk is available
+                    if new_data_count > write_chunk_size:
+                        wrote_chunk = True
+                        # Copy the current data to a new array
 
-                if wrote_chunk:
-                    # Increment prev_count by the chunk size
-                    prev_count += write_chunk_size
-                    # Increment prev_index by the chunk size
-                    prev_index += write_chunk_size
-                    # Wrap prev_index to the size of the UL buffer
-                    prev_index %= ul_buffer_count
+                        # Check if the data wraps around the end of the UL
+                        # buffer. Multiple copy operations will be required.
+                        if prev_index + write_chunk_size > ul_buffer_count - 1:
+                            first_chunk_size = ul_buffer_count - prev_index
+                            second_chunk_size = (
+                                write_chunk_size - first_chunk_size)
 
-                    if prev_count >= points_to_write:
-                        break
-                    print('.', end='')
-                else:
-                    # Wait a short amount of time for more data to be
-                    # acquired.
-                    sleep(0.1)
+                            # Copy the first chunk of data to the
+                            # write_chunk_array
+                            ul.scaled_win_buf_to_array(
+                                memhandle, write_chunk_array, prev_index,
+                                first_chunk_size)
+
+                            # Create a pointer to the location in
+                            # write_chunk_array where we want to copy the
+                            # remaining data
+                            second_chunk_pointer = cast(addressof(write_chunk_array)
+                                                        + first_chunk_size
+                                                        * sizeof(c_double),
+                                                        POINTER(c_double))
+
+                            # Copy the second chunk of data to the
+                            # write_chunk_array
+                            ul.scaled_win_buf_to_array(
+                                memhandle, second_chunk_pointer,
+                                0, second_chunk_size)
+                        else:
+                            # Copy the data to the write_chunk_array
+                            ul.scaled_win_buf_to_array(
+                                memhandle, write_chunk_array, prev_index,
+                                write_chunk_size)
+
+                        # Check for a buffer overrun just after copying the data
+                        # from the UL buffer. This will ensure that the data was
+                        # not overwritten in the UL buffer before the copy was
+                        # completed. This should be done before writing to the
+                        # file, so that corrupt data does not end up in it.
+                        status, curr_count, _ = ul.get_status(
+                            board_num, FunctionType.AIFUNCTION)
+                        if curr_count - prev_count > ul_buffer_count:
+                            # Print an error and stop writing
+                            ul.stop_background(board_num, FunctionType.AIFUNCTION)
+                            print('A buffer overrun occurred')
+                            break
+
+                        for i in range(write_chunk_size):
+                            f.write(str(write_chunk_array[i]) + ',')
+                            fi.write(bytearray(struct.pack("d", write_chunk_array[i])))
+                            write_ch_num += 1
+                            if write_ch_num == high_chan + 1:
+                                write_ch_num = low_chan
+                                f.write(u'\n')
+                    else:
+                        wrote_chunk = False
+
+                    if wrote_chunk:
+                        # Increment prev_count by the chunk size
+                        prev_count += write_chunk_size
+                        # Increment prev_index by the chunk size
+                        prev_index += write_chunk_size
+                        # Wrap prev_index to the size of the UL buffer
+                        prev_index %= ul_buffer_count
+
+                        if prev_count >= points_to_write:
+                            break
+                        print('.', end='')
+                    else:
+                        # Wait a short amount of time for more data to be
+                        # acquired.
+                        sleep(0.1)
 
         ul.stop_background(board_num, FunctionType.AIFUNCTION)
     except Exception as e:

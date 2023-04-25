@@ -92,7 +92,7 @@ Devices</string>
     </property>
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>590</x>
       <y>10</y>
       <width>80</width>
       <height>41</height>
@@ -782,7 +782,8 @@ Devices</string>
       <property name="text">
        <string>Connect Channels in increasing order.
 This simplifies the scanning
-as channels are scanned on after other</string>
+as channels are scanned on after other
+Skipped channels will still be recorded</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="CH_REC_7">
@@ -826,7 +827,7 @@ as channels are scanned on after other</string>
       <property name="geometry">
        <rect>
         <x>670</x>
-        <y>150</y>
+        <y>200</y>
         <width>101</width>
         <height>41</height>
        </rect>
@@ -1397,7 +1398,7 @@ as channels are scanned on after other</string>
       <property name="geometry">
        <rect>
         <x>670</x>
-        <y>100</y>
+        <y>150</y>
         <width>101</width>
         <height>41</height>
        </rect>
@@ -1461,6 +1462,47 @@ as channels are scanned on after other</string>
        <string>CH5L</string>
       </property>
      </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>70</y>
+        <width>111</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>11</pointsize>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Sampling rate</string>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="SamplingRateSpin">
+      <property name="geometry">
+       <rect>
+        <x>680</x>
+        <y>100</y>
+        <width>81</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="suffix">
+       <string> Hz</string>
+      </property>
+      <property name="minimum">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <number>30000</number>
+      </property>
+      <property name="value">
+       <number>100</number>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="Viewer">
      <attribute name="title">
@@ -1476,7 +1518,7 @@ as channels are scanned on after other</string>
        </rect>
       </property>
      </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget" native="true">
+     <widget class="Analog_plot" name="Channel_viewWidget_1" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -1506,83 +1548,128 @@ as channels are scanned on after other</string>
        </rect>
       </property>
      </widget>
-     <widget class="QLabel" name="label_21">
+    </widget>
+    <widget class="QWidget" name="Viewer2">
+     <attribute name="title">
+      <string>Viewer2</string>
+     </attribute>
+     <widget class="Analog_plot" name="Channel_viewWidget_5" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>81</width>
-        <height>16</height>
+        <y>50</y>
+        <width>1101</width>
+        <height>161</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Recording</string>
       </property>
      </widget>
-     <widget class="QLabel" name="recording_Info">
+     <widget class="Analog_plot" name="Channel_viewWidget_6" native="true">
       <property name="geometry">
        <rect>
-        <x>90</x>
-        <y>20</y>
-        <width>81</width>
-        <height>16</height>
+        <x>10</x>
+        <y>220</y>
+        <width>1101</width>
+        <height>161</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>OFF</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_23">
+     <widget class="Analog_plot" name="Channel_viewWidget_7" native="true">
       <property name="geometry">
        <rect>
-        <x>180</x>
-        <y>20</y>
-        <width>51</width>
-        <height>16</height>
+        <x>10</x>
+        <y>390</y>
+        <width>1101</width>
+        <height>161</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>Timer:</string>
       </property>
      </widget>
-     <widget class="QLabel" name="timer_info">
+     <widget class="Analog_plot" name="Channel_viewWidget_8" native="true">
       <property name="geometry">
        <rect>
-        <x>240</x>
-        <y>20</y>
-        <width>81</width>
-        <height>16</height>
+        <x>10</x>
+        <y>560</y>
+        <width>1101</width>
+        <height>161</height>
        </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="text">
-       <string>0</string>
       </property>
      </widget>
     </widget>
+   </widget>
+   <widget class="QLabel" name="timer_info">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>60</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_23">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>60</y>
+      <width>51</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Timer:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="recording_Info">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>60</y>
+      <width>41</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>OFF</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_21">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>60</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Recording</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
