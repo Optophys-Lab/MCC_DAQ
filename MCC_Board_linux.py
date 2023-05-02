@@ -9,13 +9,20 @@ import struct
 import time
 import datetime
 
+import numpy as np
+import uldaq.ul_exception
+
 from GUI_utils import MCC_settings
 
 OS_TYPE = platform.system()
 if OS_TYPE == 'Linux':
     from uldaq import (get_daq_device_inventory, DaqDevice, AInScanFlag,
                        AiInputMode, AiQueueElement, create_float_buffer,
-                       ScanOption, ScanStatus, InterfaceType, Range)
+                       ScanStatus, InterfaceType, Range)
+    from uldaq import ScanOption as ScanOptions
+    from uldaq import Range as ULRange
+    from uldaq import ScanStatus as Status
+
 elif OS_TYPE == 'Windows':
     """
     potentially need to add     dll_absolute_path = "C:\\Program Files(x86)\\Measurement Computing\\DAQ\\cbw64.dll"
@@ -31,8 +38,7 @@ elif OS_TYPE == 'Windows':
 
 # AnalogInputMode ==  AiInputMode
 # DaqDeviceInfo ==  DaqDevice
-# ScanOption == ScanOptions
-# ULRange == Range
+
 
 class MCCBoard:
     '''Class for acquiring data from a MCC board on a host computer.
@@ -40,6 +46,7 @@ class MCCBoard:
     '''
 
     def __init__(self, file_type='csv'):
+        self.data_queues = None
         self.record_tofile = True
         self.is_recording = False
         self.file_name = 'test.bin'
@@ -56,8 +63,11 @@ class MCCBoard:
         self.buffer_size_seconds = 2
         self.memhandle = None
         self.stop_recordingevent = None
-        self.scan_options = (ScanOptions.BACKGROUND | ScanOptions.CONTINUOUS |
-                             ScanOptions.SCALEDATA)
+        if OS_TYPE == 'Linux':
+            self.scan_options = ScanOptions.CONTINUOUS
+        elif OS_TYPE == 'Windows':
+            self.scan_options = (ScanOptions.BACKGROUND | ScanOptions.CONTINUOUS |
+                                 ScanOptions.SCALEDATA)
 
     def scan_devices(self) -> list:
         self.devices = get_daq_device_inventory(InterfaceType.USB)
@@ -122,7 +132,7 @@ class MCCBoard:
 
         # Establish a connection to the DAQ device.
         descriptor = self.daq_device.get_descriptor()
-        self.log.debug('\nConnecting to', descriptor.dev_string, '- please wait...')
+        self.log.debug(f'Connecting to {descriptor.dev_string}')
         # For Ethernet devices using a connection_code other than the default
         # value of zero, change the line below to enter the desired code.
         self.daq_device.connect(connection_code=0)
@@ -154,7 +164,8 @@ class MCCBoard:
         self.file_header = settings.to_header()
 
         self.data_queues = [Queue(10000)] * self.num_channels
-        #self.stop_recordingevent = event
+
+        # self.stop_recordingevent = event
         Path("data").mkdir(exist_ok=True)
         try:
             self.file_name = Path("data") / f"{settings.session_name}.bin"
@@ -164,9 +175,11 @@ class MCCBoard:
             self.file_name = Path("data") / f"DAQrec_{datetime.datetime.now().strftime('%Y%m%d_%H%m%S')}.bin"
 
         if OS_TYPE == 'Linux':
-            raise NotImplementedError
-            # self.connect_to_device_linux(idx)
-            # self.log.debug('Start recording via Linux routine')
+            self.log.debug('Start recording via Linux routine')
+            self.start_rec_time = time.monotonic()
+            self.recording_thread = Thread(target=self.start_recording_linux)
+            self.recording_thread.start()
+
         elif OS_TYPE == 'Windows':
             self.log.debug('Started recording-thread via Windows routine')
             self.start_rec_time = time.monotonic()
@@ -179,12 +192,21 @@ class MCCBoard:
 
     def stop_recording(self):
         self.log.info('Stopping recording')
-        ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
-        print(f"Stopping recording after {time.monotonic()-self.start_rec_time} s")
+        if OS_TYPE == 'Linux':
+            try:
+                self.daq_device.get_ai_device().scan_stop()
+            except uldaq.ul_exception.ULException:
+                self.log.warning("some UL exception occured")
+
+        elif OS_TYPE == 'Windows':
+            ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
+
+        print(f"Stopping recording after {(time.monotonic() - self.start_rec_time):0.1f} s")
         self.recording_thread.join()
-        #for queue in self.data_queues: # wait until the data showing is empty
+        # for queue in self.data_queues: # wait until the data showing is empty
         #    queue.join()
         self.is_recording = False
+
     def start_recording_windows(self):
         record_tofile = self.record_tofile
         # Create a circular buffer that can hold buffer_size_seconds worth of
@@ -204,7 +226,6 @@ class MCCBoard:
         ul_buffer_count = points_per_channel * self.num_channels
         # When handling the buffer, we will read 1/10 of the buffer at a time
         write_chunk_size = int(ul_buffer_count / 20)
-
 
         self.memhandle = ul.scaled_win_buf_alloc(ul_buffer_count)
 
@@ -310,7 +331,7 @@ class MCCBoard:
                         fi.write(bytearray(struct.pack("d", write_chunk_array[i])))
                         # f.write(str(write_chunk_array[i]) + ',')
                         try:
-                            self.data_queues[write_ch_num-self.low_chan].put_nowait(write_chunk_array[i])
+                            self.data_queues[write_ch_num - self.low_chan].put_nowait(write_chunk_array[i])
                         except Full:
                             self.log.error('Queue buffer is FULL!!')
                             ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
@@ -336,13 +357,179 @@ class MCCBoard:
                     time.sleep(0.0001)
 
                 t += (time.monotonic() - t0)
-                loop_counter +=1
+                loop_counter += 1
                 if loop_counter == 100:
                     loop_counter = 0
                     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
                     t = 0
         # free buffer before exiting the Thread
         ul.win_buf_free(self.memhandle)
+        self.memhandle = None
+
+    def start_recording_linux(self):
+        record_tofile = self.record_tofile
+        ai_device = self.daq_device.get_ai_device()
+
+        # Create a circular buffer that can hold buffer_size_seconds worth of
+        # data, or at least 10 points (this may need to be adjusted to prevent
+        # a buffer overrun)
+        points_per_channel = max(self.sampling_rate * self.buffer_size_seconds, 10)
+
+        # Some hardware requires that the total_count is an integer multiple
+        # of the packet size. For this case, calculate a points_per_channel
+        # that is equal to or just above the points_per_channel selected
+        # which matches that requirement.
+        # todo check if this is the case for our hardware ?
+        # if self.ai_info.packet_size != 1:
+        #    packet_size = self.ai_info.packet_size
+        #    remainder = points_per_channel % packet_size
+        #    if remainder != 0:
+        #        points_per_channel += packet_size - remainder
+
+        ul_buffer_count = points_per_channel * self.num_channels
+        # When handling the buffer, we will read 1/10 of the buffer at a time
+        write_chunk_size = int(ul_buffer_count / 20)
+
+        self.memhandle = create_float_buffer(self.num_channels, points_per_channel)
+
+        # Allocate an array of doubles temporary storage of the data
+        write_chunk_array = (c_double * write_chunk_size)()
+
+        # Check if the buffer was successfully allocated
+        if not self.memhandle:
+            raise Exception('Failed to allocate memory')
+
+        # Start the scan
+        rate = ai_device.a_in_scan(self.low_chan, self.high_chan, self.input_mode,
+                                   self.ai_range, points_per_channel,
+                                   self.sampling_rate, self.scan_options, AInScanFlag.DEFAULT, self.memhandle)
+        self.log.info(f"Staring scanning with {rate} Hz")
+
+        status = Status.IDLE
+        # Wait for the scan to start fully
+        while status == Status.IDLE:
+            status, _ = ai_device.get_scan_status()
+
+        # TODO update from here
+        # Create a file for storing the data
+        with open(self.file_name, 'wb') as fi:
+            self.log.info(f'Writing data to {self.file_name}')
+            head_len = len(self.file_header)
+            fi.write(head_len.to_bytes(16, 'little'))
+            fi.write(self.file_header)
+            self.log.debug(f'written header')
+
+            # Start the write loop
+            prev_count = 0
+            prev_index = 0
+            write_ch_num = self.low_chan
+
+            loop_counter = 0
+            t = 0
+            while status != Status.IDLE:
+                # Get the latest counts
+                t0 = time.monotonic()
+
+                status, transfer_status = ai_device.get_scan_status()
+                curr_count = transfer_status.current_total_count
+                curr_index = transfer_status.current_index  # indicates where are we in buffer ?
+
+                new_data_count = curr_count - prev_count
+                # Check for a buffer overrun before copying the data, so
+                # that no attempts are made to copy more than a full buffer
+                # of data
+                if new_data_count > ul_buffer_count:
+                    # Print an error and stop writing
+                    if status == ScanStatus.RUNNING:
+                        ai_device.scan_stop()
+                    self.log.error('A buffer overrun occurred')
+                    break
+
+                # Check if a chunk is available
+                if new_data_count > write_chunk_size:
+                    wrote_chunk = True
+                    # Copy the current data to a new array
+
+                    # Check if the data wraps around the end of the UL
+                    # buffer. Multiple copy operations will be required.
+                    # in linux i could find out via transfer_status.current_index
+                    if curr_index < prev_index - 1 and curr_index != 0:  # todo check if i need -1 ?
+                        # self.log.info('This weird wrap happended.. ')
+                        first_chunk_size = ul_buffer_count - prev_index
+                        second_chunk_size = (
+                                write_chunk_size - first_chunk_size)
+
+                        # Copy the first chunk of data to the
+                        # write_chunk_array
+
+                        # write_chunk_array[:first_chunk_size] = np.frombuffer(self.memhandle, count=first_chunk_size, offset=8 * prev_index)
+                        write_chunk_array[:first_chunk_size] = self.memhandle[prev_index:prev_index + first_chunk_size]
+
+                        # Copy the second chunk of data to the
+                        # write_chunk_array
+                        # write_chunk_array[first_chunk_size:] = np.frombuffer(self.memhandle, count=curr_index, offset=0)
+                        write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
+
+                    else:
+                        # write_chunk_array = np.copy(np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index))
+                        # write_chunk_array = np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index)
+                        write_chunk_array[:] = self.memhandle[prev_index:prev_index + write_chunk_size]
+
+                        # potentially not, as long as i make sure the data was used before the buffer loops
+
+                    # Check for a buffer overrun just after copying the data
+                    # from the UL buffer. This will ensure that the data was
+                    # not overwritten in the UL buffer before the copy was
+                    # completed. This should be done before writing to the
+                    # file, so that corrupt data does not end up in it.
+                    status, transfer_status = ai_device.get_scan_status()
+                    curr_count = transfer_status.current_total_count
+                    if curr_count - prev_count > ul_buffer_count:
+                        # Print an error and stop writing
+                        if status == ScanStatus.RUNNING:
+                            ai_device.scan_stop()
+                        self.log.error('A buffer overrun occurred between copy ')
+                        break
+
+                    for i in range(write_chunk_size):
+                        fi.write(bytearray(struct.pack("d", write_chunk_array[i])))
+                        # f.write(str(write_chunk_array[i]) + ',')
+                        try:
+                            self.data_queues[write_ch_num - self.low_chan].put_nowait(write_chunk_array[i])
+                            # todo consider doing this on client side !
+                        except Full:
+                            self.log.error('Queue buffer is FULL!!')
+                            if status == ScanStatus.RUNNING:
+                                ai_device.scan_stop()
+                            break
+                        write_ch_num += 1
+                        if write_ch_num == self.high_chan + 1:
+                            write_ch_num = self.low_chan
+                            # f.write(u'\n')
+                else:
+                    wrote_chunk = False
+
+                if wrote_chunk:
+                    # Increment prev_count by the chunk size
+                    prev_count += write_chunk_size
+                    # Increment prev_index by the chunk size
+                    prev_index += write_chunk_size
+                    # Wrap prev_index to the size of the UL buffer
+                    prev_index %= ul_buffer_count
+
+                else:
+                    # Wait a short amount of time for more data to be
+                    # acquired.
+                    time.sleep(0.0001)
+
+                t += (time.monotonic() - t0)
+                loop_counter += 1
+                if loop_counter == 100:
+                    loop_counter = 0
+                    self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+                    t = 0
+
+        # free buffer before exiting the Thread
         self.memhandle = None
 
     def release_device(self):

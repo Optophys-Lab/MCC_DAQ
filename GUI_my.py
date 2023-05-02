@@ -21,12 +21,14 @@ log.setLevel(logging.DEBUG)
 
 #logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.rec_timer = None
+        self.plot_timer = None
         self.path2file = Path(__file__)
         uic.loadUi(self.path2file.parent / 'GUI' / 'GUI.ui', self)
         self.setWindowTitle('MCCRecorder v.%s' % VERSION)
@@ -105,7 +107,7 @@ class MCC_GUI(QMainWindow):
         """
         self.STOPButton.setEnabled(True)
         self.tabWidget.setCurrentIndex(1)
-
+        self.log.warning('Not Implemented !')
 
     def record_daq(self):
         """
@@ -132,14 +134,21 @@ class MCC_GUI(QMainWindow):
         """
         calls the MCCBoard class to stop recording and acquisition of data
         """
-        self.plot_timer.stop()
-        self.rec_timer.stop()
+        if self.plot_timer:
+            self.plot_timer.stop()
+
+        if self.rec_timer:
+            self.rec_timer.stop()
+
         self.recording_Info.setText('OFF')
         self.mcc_board.stop_recording()
 
         self.STOPButton.setEnabled(False)
         self.RUNButton.setEnabled(True)
         self.RECButton.setEnabled(True)
+
+        self.plot_timer = None
+        self.rec_timer = None
 
     #### PLOTTING ######
     def reset_plots(self):
@@ -154,7 +163,7 @@ class MCC_GUI(QMainWindow):
                 if channel['win'] == win_id and channel['active']:
                     index_vec.append(ch_id)
             self.plotting_indexing_vec.append(index_vec)
-        print('done')
+
     def update_plots(self):
         # analyze the perfect size for this update ? changing from 100 to 500 seemed to improve a lot.
         # todo maybe add a visualizer of the queu size ?
@@ -214,7 +223,11 @@ class MCC_GUI(QMainWindow):
             self.settings.channel_list.append(channel_dict)
 
         self.settings.voltage_range = self.Range_combo.currentText()
-        self.settings.device = self.mcc_board.daq_device.product_name
+        try:
+            self.settings.device = self.mcc_board.daq_device.product_name
+        except AttributeError:
+            self.settings.device = self.Device_dropdown.currentText()
+
         self.settings.sampling_rate = self.SamplingRateSpin.value()
         self.settings.get_active_channels()
 

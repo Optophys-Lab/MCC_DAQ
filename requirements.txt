@@ -1,5 +1,6 @@
-numpy
-pyqt6
-pyqtgraph
-uldaq
-mcculw
+numpy~=1.24.3
+pyqt6~=6.4
+pyqtgraph~=0.13.3
+uldaq~=1.2.3; sys_platform == 'linux'
+mcculw; sys_platform == 'windows'
+
