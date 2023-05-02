@@ -54,8 +54,9 @@ class MyBinaryFile_Reader:
             if len_remainder != 0:
                 print('Data length is not multiple of channel count !! Cropping..')
                 data = data[:-len_remainder]
-            self.data = np.reshape(data, (self.num_channels, -1))
-            self.rec_duration = self.data.shape[1] / self.sampling_rate
+            self.data = np.reshape(data, (-1, self.num_channels))
+            # TODO THIS IS A BUG !!!
+            self.rec_duration = self.data.shape[0] / self.sampling_rate
 
 class MCC_settings:
     def __init__(self):
