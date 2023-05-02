@@ -331,7 +331,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH6H</string>
+       <string>CH4L</string>
       </property>
      </widget>
      <widget class="QComboBox" name="CH_Win_8">
@@ -373,7 +373,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH4L</string>
+       <string>CH1L</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="CH_REC_5">
@@ -534,7 +534,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH1L</string>
+       <string>CH3H</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="CH_name_8">
@@ -573,7 +573,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH0L</string>
+       <string>CH1H</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="CH_REC_14">
@@ -670,7 +670,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH3L</string>
+       <string>CH7H</string>
       </property>
      </widget>
      <widget class="QLabel" name="CH_4">
@@ -691,7 +691,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH2H</string>
+       <string>CH4H</string>
       </property>
      </widget>
      <widget class="QLabel" name="CH_2">
@@ -712,7 +712,7 @@ Devices</string>
        </font>
       </property>
       <property name="text">
-       <string>CH1H</string>
+       <string>CH2H</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="CH_name_14">
@@ -870,7 +870,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH3H</string>
+       <string>CH6H</string>
       </property>
      </widget>
      <widget class="QCheckBox" name="CH_REC_6">
@@ -907,7 +907,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH4H</string>
+       <string>CH0L</string>
       </property>
      </widget>
      <widget class="QLabel" name="CH_14">
@@ -928,7 +928,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH7H</string>
+       <string>CH6L</string>
       </property>
      </widget>
      <widget class="QLabel" name="CH_13">
@@ -949,7 +949,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH6L</string>
+       <string>CH5L</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="CH_name_2">
@@ -988,7 +988,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH5H</string>
+       <string>CH2L</string>
       </property>
      </widget>
      <widget class="QLabel" name="CH_15">
@@ -1257,7 +1257,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH2L</string>
+       <string>CH5H</string>
       </property>
      </widget>
      <widget class="QComboBox" name="Range_combo">
@@ -1459,7 +1459,7 @@ Skipped channels will still be recorded</string>
        </font>
       </property>
       <property name="text">
-       <string>CH5L</string>
+       <string>CH3L</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_5">
