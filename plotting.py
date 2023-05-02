@@ -60,22 +60,22 @@ class Analog_plot(QWidget):
 
         self.axis.clear()
         self.axis.setTitle(f"Analog {PlotWindowEnum(win_id).name}")
-        self.ADCs = [Signal_history(history_length)] * nr_lines
+        self.ADCs = [Signal_history(history_length) for _ in range(nr_lines)] #* nr_lines
         self.plot_lines = list()
         for name, c in zip(names, colors):
             self.plot_lines.append(self.axis.plot(pen=pg.mkPen(c), name=name))
         self.x = np.linspace(-history_dur, 0, history_length)  # X axis for timeseries plots.
         try:
-            range = int(re.findall(r'\d', "settings.voltage_range")[0])
+            yrange = int(re.findall(r'\d', "settings.voltage_range")[0])
         except:
-            range = 10
+            yrange = 10
 
-        self.axis.setYRange(-range, range, padding=0)
+        self.axis.setYRange(-yrange, yrange, padding=0)
         self.axis.setXRange(-history_dur, history_dur * 0.02, padding=0)
 
     def update_new(self, new_ADCs: list):
-        for ADC, new_val in zip(self.ADCs, new_ADCs):
-            ADC.update(new_val)
+        for ADC_id, new_val in enumerate(new_ADCs):
+            self.ADCs[ADC_id].update(new_val)
 
         if self.AC_mode:
             # Plot signals with mean removed.
