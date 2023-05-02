@@ -5,7 +5,7 @@ import sys
 import numpy as np
 from queue import Queue, Empty
 
-from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6 import uic, QtGui
 import pyqtgraph as pg
@@ -19,11 +19,15 @@ from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
 
-#logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
-
+"""
+#TODO
+- add per graph settings of range ?
+file naming seems broken ! ?
+"""
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
@@ -64,7 +68,7 @@ class MCC_GUI(QMainWindow):
             ele.addItems([a.name for a in PlotWindowEnum])
             ele.setCurrentIndex(0)
         # self.tabWidget.setTabVisible(1, False)
-        # TODO uncomment to hide viewer?
+
 
     ### DAQ Board interaction
     def scan_devices(self):
@@ -107,7 +111,18 @@ class MCC_GUI(QMainWindow):
         """
         self.STOPButton.setEnabled(True)
         self.tabWidget.setCurrentIndex(1)
-        self.log.warning('Not Implemented !')
+        self.get_settings()
+        self.mcc_board.start_viewing(self.settings)
+
+        self.reset_plots()
+        self.recording_Info.setText('Viewing')
+        self.plot_timer = QTimer()
+        self.plot_timer.timeout.connect(self.update_plots)
+        self.plot_timer.start(100)
+        self.s_since_start = 0
+        self.rec_timer = QTimer()
+        self.rec_timer.timeout.connect(self.increase_time)
+        self.rec_timer.start(1000)
 
     def record_daq(self):
         """
@@ -116,9 +131,9 @@ class MCC_GUI(QMainWindow):
         self.STOPButton.setEnabled(True)
         self.tabWidget.setCurrentIndex(1)
         self.get_settings()
-        self.mcc_board.start_recording(self.settings, True)
+        self.mcc_board.start_recording(self.settings)
 
-        #self.timer = pg.QtCore.QTimer()
+        # self.timer = pg.QtCore.QTimer()
         self.reset_plots()
         self.recording_Info.setText('ON')
         self.plot_timer = QTimer()
@@ -152,9 +167,9 @@ class MCC_GUI(QMainWindow):
 
     #### PLOTTING ######
     def reset_plots(self):
-        self.plotting_widgets= [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3,
-                                self.Channel_viewWidget_4,  self.Channel_viewWidget_5, self.Channel_viewWidget_6,
-                                self.Channel_viewWidget_7, self.Channel_viewWidget_8]
+        self.plotting_widgets = [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3,
+                                 self.Channel_viewWidget_4, self.Channel_viewWidget_5, self.Channel_viewWidget_6,
+                                 self.Channel_viewWidget_7, self.Channel_viewWidget_8]
         self.plotting_indexing_vec = list()
         for win_id in range(8):
             self.plotting_widgets[win_id].reset(self.settings, win_id=win_id)
@@ -166,7 +181,6 @@ class MCC_GUI(QMainWindow):
 
     def update_plots(self):
         # analyze the perfect size for this update ? changing from 100 to 500 seemed to improve a lot.
-        # todo maybe add a visualizer of the queu size ?
         value_array = np.zeros((self.settings.num_channels, 500))
         array_step = 0
         for array_step in range(500):
@@ -182,11 +196,13 @@ class MCC_GUI(QMainWindow):
         if value_array.shape[1] == 0:  # no new data was acquired between calls
             return
 
-
         for plot_widget, index_vec in zip(self.plotting_widgets, self.plotting_indexing_vec):
             if index_vec:
                 plot_widget.update_new([value_array[index, :] for index in index_vec])
-        # TODO second plot per window doesn not Work !!!!
+
+        self.statusbar.showMessage(f"In Q :{self.mcc_board.data_queues[0].qsize()}")
+        # todo indicate the lag ?
+
     def increase_time(self):
         """
         counts the recording time up each second and displays it
@@ -259,14 +275,24 @@ class MCC_GUI(QMainWindow):
         self.SettingsLoadButton.clicked.connect(self.load_settings)
 
     def app_is_exiting(self):
-        if self.mcc_board.is_recording:
+        if self.mcc_board.is_recording or self.mcc_board.is_viewing:
             self.mcc_board.stop_recording()
         if self.mcc_board.daq_device:
             self.mcc_board.release_device()
 
     def closeEvent(self, event):
         self.log.info("Received window close event.")
-        # todo add a check if recording is running ? prevent from closing ? or open dialog
+        if self.mcc_board.is_recording:
+            message = QMessageBox.information(self,
+                                              "Recording is active",
+                                              "Recording still running. Abort ?",
+                                              buttons=QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes)
+            if message == QMessageBox.StandardButton.No:
+                return
+            elif message == QMessageBox.StandardButton.Abort:
+                return
+            elif message == QMessageBox.StandardButton.Yes:
+                print('not exiting')
         self.app_is_exiting()
         # self.disable_console_logging()
         super(MCC_GUI, self).closeEvent(event)
