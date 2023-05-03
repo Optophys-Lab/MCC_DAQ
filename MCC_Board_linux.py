@@ -172,7 +172,7 @@ class MCCBoard:
             if settings.session_name is None:
                 raise AttributeError
         except AttributeError:  # no session name was passed
-            self.file_name = Path("data") / f"DAQrec_{datetime.datetime.now().strftime('%Y%m%d_%H%m%S')}.bin"
+            self.file_name = Path("data") / f"DAQrec_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.bin"
 
         if OS_TYPE == 'Linux':
             self.log.debug('Start recording via Linux routine')
@@ -456,7 +456,10 @@ class MCCBoard:
                         # Copy the second chunk of data to the
                         # write_chunk_array
                         # write_chunk_array[first_chunk_size:] = np.frombuffer(self.memhandle, count=curr_index, offset=0)
-                        write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
+                        if second_chunk_size == 0:
+                            pass
+                        else:
+                            write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
 
                     else:
                         # write_chunk_array = np.copy(np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index))
@@ -627,10 +630,15 @@ class MCCBoard:
                     # Copy the second chunk of data to the
                     # write_chunk_array
                     # write_chunk_array[first_chunk_size:] = np.frombuffer(self.memhandle, count=curr_index, offset=0)
-                    try:
-                        write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
-                    except ValueError:
-                        print("a")
+                    if second_chunk_size == 0:
+                        #write_chunk_array[:] = self.memhandle[prev_index:prev_index + write_chunk_size]
+                        pass
+                    else:
+                        try:
+                            write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
+                        except ValueError:
+                            print("a")
+                        # todo ! This happens sometimes !!! check Y
 
                 else:
                     # write_chunk_array = np.copy(np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index))

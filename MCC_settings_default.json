@@ -114,7 +114,57 @@
             "color": "#9f4800"
         }
     ],
-    "device": "USB-1608G",
+    "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
-    "sampling_rate": 1000
+    "sampling_rate": 1000,
+    "graphsettings": {
+        "A": {
+            "Yrange": "+-10 V",
+            "time_base": "10 s"
+        },
+        "B": {
+            "Yrange": "+-10 V",
+            "time_base": "5 s"
+        },
+        "C": {
+            "Yrange": "+-10 V",
+            "time_base": "2 s"
+        },
+        "D": {
+            "Yrange": "+-10 V",
+            "time_base": "1 s"
+        },
+        "E": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "F": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "G": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "H": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "J": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "I": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "K": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "L": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        }
+    }
 }

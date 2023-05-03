@@ -21,13 +21,15 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.2.1"
+VERSION = "0.2.5"
 
 """
 #TODO
-- add per graph settings of range ?
-file naming seems broken ! ?
+- add nr_of grapth to settings file
+- limit the selection of channels to active graths!
 """
+
+
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
@@ -40,16 +42,16 @@ class MCC_GUI(QMainWindow):
         self.log.setLevel(logging.DEBUG)
         self.daq_device = None
         self.mcc_board = MCCBoard()
-        self.ConnectSignals()
         self.ConnectButton.setIcon(QtGui.QIcon("GUI/icons/connect.svg"))
         self.RUNButton.setIcon(QtGui.QIcon("GUI/icons/play.svg"))
         self.RECButton.setIcon(QtGui.QIcon("GUI/icons/record.svg"))
         self.STOPButton.setIcon(QtGui.QIcon("GUI/icons/stop.svg"))
         self.settings = MCC_settings()
+
+        # Dynamically Create ?
         self.channel_labels = [self.CH_0, self.CH_1, self.CH_2, self.CH_3, self.CH_4, self.CH_5, self.CH_6, self.CH_7,
                                self.CH_8, self.CH_9, self.CH_10, self.CH_11, self.CH_12, self.CH_13, self.CH_14,
                                self.CH_15]
-
         self.channel_names = [self.CH_name_0, self.CH_name_1, self.CH_name_2, self.CH_name_3, self.CH_name_4,
                               self.CH_name_5, self.CH_name_6, self.CH_name_7, self.CH_name_8, self.CH_name_9,
                               self.CH_name_10, self.CH_name_11, self.CH_name_12, self.CH_name_13, self.CH_name_14,
@@ -63,12 +65,28 @@ class MCC_GUI(QMainWindow):
                             self.CH_Win_10, self.CH_Win_11, self.CH_Win_12, self.CH_Win_13, self.CH_Win_14,
                             self.CH_Win_15]
 
+        self.Viewer1_Combo.addItems(map(str, range(5)))
+        self.Viewer2_Combo.addItems(map(str, range(5)))
+        self.Viewer3_Combo.addItems(map(str, range(5)))
+        self.Viewer1_Combo.setCurrentIndex(4)
+        self.Viewer2_Combo.setCurrentIndex(4)
+        self.Viewer3_Combo.setCurrentIndex(4)
+
+        self.Graph_setting_1.idx = 0
+        self.Graph_setting_1.adjust_current_widget()
+        self.Graph_setting_2.idx = 1
+        self.Graph_setting_2.adjust_current_widget()
+        self.Graph_setting_3.idx = 2
+        self.Graph_setting_3.adjust_current_widget()
+
+        self.ConnectSignals()
         for ele in self.channel_win:
             ele.clear()
             ele.addItems([a.name for a in PlotWindowEnum])
             ele.setCurrentIndex(0)
         # self.tabWidget.setTabVisible(1, False)
 
+        self.scan_devices()
 
     ### DAQ Board interaction
     def scan_devices(self):
@@ -81,6 +99,10 @@ class MCC_GUI(QMainWindow):
             self.Device_dropdown.addItems(devices)
             self.ConnectButton.setEnabled(True)
         self.log.debug(f'Scanned for available devices')
+
+        if len(devices)==1:
+            self.connect_to_device()
+            self.log.debug(f'Connecting to only device automatically')
 
     def connect_to_device(self):
         """
@@ -104,13 +126,12 @@ class MCC_GUI(QMainWindow):
                 self.channel_win[c_id].setEnabled(True)
 
             self.set_settings()
+        self.ScanDevButton.setEnabled(False)
 
     def run_daq(self):
         """
         calls the MCCBoard class to start acquiring data, visualize the data
         """
-        self.STOPButton.setEnabled(True)
-        self.tabWidget.setCurrentIndex(1)
         self.get_settings()
         self.mcc_board.start_viewing(self.settings)
 
@@ -124,12 +145,16 @@ class MCC_GUI(QMainWindow):
         self.rec_timer.timeout.connect(self.increase_time)
         self.rec_timer.start(1000)
 
+        self.RUNButton.setEnabled(False)
+        self.RECButton.setEnabled(False)
+        self.STOPButton.setEnabled(True)
+        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setTabEnabled(1, False)
+
     def record_daq(self):
         """
-        calls the MCCBoard class to start recording the choosen data
+        calls the MCCBoard class to start recording the chosen data
         """
-        self.STOPButton.setEnabled(True)
-        self.tabWidget.setCurrentIndex(1)
         self.get_settings()
         self.mcc_board.start_recording(self.settings)
 
@@ -144,6 +169,12 @@ class MCC_GUI(QMainWindow):
         self.rec_timer = QTimer()
         self.rec_timer.timeout.connect(self.increase_time)
         self.rec_timer.start(1000)
+
+        self.RUNButton.setEnabled(False)
+        self.RECButton.setEnabled(False)
+        self.STOPButton.setEnabled(True)
+        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setTabEnabled(1, False)
 
     def stop_daq(self):
         """
@@ -161,6 +192,7 @@ class MCC_GUI(QMainWindow):
         self.STOPButton.setEnabled(False)
         self.RUNButton.setEnabled(True)
         self.RECButton.setEnabled(True)
+        self.tabWidget.setTabEnabled(1, True)
 
         self.plot_timer = None
         self.rec_timer = None
@@ -171,6 +203,8 @@ class MCC_GUI(QMainWindow):
                                  self.Channel_viewWidget_4, self.Channel_viewWidget_5, self.Channel_viewWidget_6,
                                  self.Channel_viewWidget_7, self.Channel_viewWidget_8]
         self.plotting_indexing_vec = list()
+
+
         for win_id in range(8):
             self.plotting_widgets[win_id].reset(self.settings, win_id=win_id)
             index_vec = []
@@ -190,7 +224,7 @@ class MCC_GUI(QMainWindow):
             except Empty:
                 break
         if array_step == 500:
-            print('queue is not being emptied fast enough !')
+            self.log.warning('queue is not being emptied fast enough !')
         value_array = value_array[:, :array_step]
 
         if value_array.shape[1] == 0:  # no new data was acquired between calls
@@ -247,6 +281,10 @@ class MCC_GUI(QMainWindow):
         self.settings.sampling_rate = self.SamplingRateSpin.value()
         self.settings.get_active_channels()
 
+        self.settings.add_graphsettings(self.Graph_setting_1.get_current_settings())
+        self.settings.add_graphsettings(self.Graph_setting_2.get_current_settings())
+        self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
+
     def set_settings(self):
         voltage_set = [idx for idx, r in enumerate(self.mcc_board.ai_ranges) if r == self.settings.voltage_range]
         if not voltage_set:
@@ -262,6 +300,9 @@ class MCC_GUI(QMainWindow):
             self.channel_names[c_id].setText(channel['name'])
             self.channel_rec[c_id].setChecked(channel['active'])
             self.channel_win[c_id].setCurrentText(PlotWindowEnum(channel["win"]).name)
+        self.Graph_setting_1.set_current_settings(self.settings)
+        self.Graph_setting_2.set_current_settings(self.settings)
+        self.Graph_setting_3.set_current_settings(self.settings)
 
     #### APP MAINTANCE #######
     def ConnectSignals(self):
@@ -273,6 +314,19 @@ class MCC_GUI(QMainWindow):
 
         self.SettingsSaveButton.clicked.connect(self.save_settings)
         self.SettingsLoadButton.clicked.connect(self.load_settings)
+
+        self.Viewer1_Combo.currentIndexChanged.connect(self.adjust_viewer1)
+        self.Viewer2_Combo.currentIndexChanged.connect(self.adjust_viewer2)
+        self.Viewer3_Combo.currentIndexChanged.connect(self.adjust_viewer3)
+
+    def adjust_viewer1(self):
+        self.Graph_setting_1.nr_of_graphs = int(self.Viewer1_Combo.currentText())
+
+    def adjust_viewer2(self):
+        self.Graph_setting_2.nr_of_graphs = int(self.Viewer2_Combo.currentText())
+
+    def adjust_viewer3(self):
+        self.Graph_setting_3.nr_of_graphs = int(self.Viewer3_Combo.currentText())
 
     def app_is_exiting(self):
         if self.mcc_board.is_recording or self.mcc_board.is_viewing:
@@ -292,7 +346,7 @@ class MCC_GUI(QMainWindow):
             elif message == QMessageBox.StandardButton.Abort:
                 return
             elif message == QMessageBox.StandardButton.Yes:
-                print('not exiting')
+                self.log.info('not exiting')
         self.app_is_exiting()
         # self.disable_console_logging()
         super(MCC_GUI, self).closeEvent(event)

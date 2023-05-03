@@ -8,7 +8,7 @@ from datetime import datetime
 # from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 from PyQt6.QtWidgets import QWidget, QCheckBox, QLabel, QSpinBox, QHBoxLayout, QVBoxLayout
 from config import history_dur, triggered_dur
-from GUI_utils import MCC_settings, PlotWindowEnum
+from GUI_utils import MCC_settings, PlotWindowEnum, TimeBases, YRanges
 
 # Analog_plot ------------------------------------------------------
 
@@ -48,7 +48,13 @@ class Analog_plot(QWidget):
         self.log = logging.getLogger('Plotter')
 
     def reset(self, settings: MCC_settings, win_id=0):
-        history_length = int(settings.sampling_rate * history_dur)
+        try:
+            history_length = int(settings.sampling_rate *
+                                 TimeBases(settings.graphsettings[PlotWindowEnum(win_id).name]["time_base"]).duration)
+            dur = TimeBases(settings.graphsettings[PlotWindowEnum(win_id).name]["time_base"]).duration
+        except:
+            history_length = int(settings.sampling_rate * history_dur)
+            dur = history_dur
         nr_lines = 0
         colors = []
         names = []
@@ -64,14 +70,27 @@ class Analog_plot(QWidget):
         self.plot_lines = list()
         for name, c in zip(names, colors):
             self.plot_lines.append(self.axis.plot(pen=pg.mkPen(c), name=name))
-        self.x = np.linspace(-history_dur, 0, history_length)  # X axis for timeseries plots.
+        self.x = np.linspace(-dur, 0, history_length)  # X axis for timeseries plots.
         try:
-            yrange = int(re.findall(r'\d', "settings.voltage_range")[0])
-        except:
-            yrange = 10
+            #yrange = int(re.findall(r'\d', "settings.voltage_range")[0])
+            yrange = YRanges(settings.graphsettings[PlotWindowEnum(win_id).name]["Yrange"]).name
+            val = int(yrange.split("_")[1])
 
-        self.axis.setYRange(-yrange, yrange, padding=0)
-        self.axis.setXRange(-history_dur, history_dur * 0.02, padding=0)
+            if 'birange' in yrange:
+                yrange_min = -val
+                yrange_max = val
+            else:
+                yrange_min = 0
+                yrange_max = val
+
+
+        except:
+            yrange_min = -10
+            yrange_max = 10
+
+
+        self.axis.setYRange(yrange_min, yrange_max, padding=0)
+        self.axis.setXRange(-dur, dur * 0.02, padding=0)
 
     def update_new(self, new_ADCs: list):
         for ADC_id, new_val in enumerate(new_ADCs):

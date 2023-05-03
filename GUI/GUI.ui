@@ -17,9 +17,9 @@
    <widget class="QPushButton" name="ScanDevButton">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>10</x>
       <y>10</y>
-      <width>80</width>
+      <width>71</width>
       <height>41</height>
      </rect>
     </property>
@@ -109,7 +109,7 @@ Devices</string>
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>70</y>
+      <y>80</y>
       <width>1121</width>
       <height>761</height>
      </rect>
@@ -117,6 +117,123 @@ Devices</string>
     <property name="currentIndex">
      <number>0</number>
     </property>
+    <widget class="QWidget" name="ViewerSettings">
+     <attribute name="title">
+      <string>ViewerSettings</string>
+     </attribute>
+     <widget class="QComboBox" name="Viewer1_Combo">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>40</y>
+        <width>86</width>
+        <height>25</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="Viewer2_Combo">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>40</y>
+        <width>86</width>
+        <height>25</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>10</y>
+        <width>67</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Viewer1</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>10</y>
+        <width>67</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Viewer2</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>40</y>
+        <width>91</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Nr Graphs</string>
+      </property>
+     </widget>
+     <widget class="GraphSettings" name="Graph_setting_1" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>90</y>
+        <width>191</width>
+        <height>330</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_8">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>10</y>
+        <width>67</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Viewer3</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="Viewer3_Combo">
+      <property name="geometry">
+       <rect>
+        <x>530</x>
+        <y>40</y>
+        <width>86</width>
+        <height>25</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="GraphSettings" name="Graph_setting_2" native="true">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>90</y>
+        <width>191</width>
+        <height>330</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="GraphSettings" name="Graph_setting_3" native="true">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>90</y>
+        <width>191</width>
+        <height>330</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
     <widget class="QWidget" name="ChannelSettings">
      <attribute name="title">
       <string>Settings</string>
@@ -826,7 +943,7 @@ Skipped channels will still be recorded</string>
      <widget class="QPushButton" name="SettingsLoadButton">
       <property name="geometry">
        <rect>
-        <x>670</x>
+        <x>680</x>
         <y>200</y>
         <width>101</width>
         <height>41</height>
@@ -1268,7 +1385,7 @@ Skipped channels will still be recorded</string>
        <rect>
         <x>680</x>
         <y>40</y>
-        <width>81</width>
+        <width>101</width>
         <height>22</height>
        </rect>
       </property>
@@ -1397,7 +1514,7 @@ Skipped channels will still be recorded</string>
      <widget class="QPushButton" name="SettingsSaveButton">
       <property name="geometry">
        <rect>
-        <x>670</x>
+        <x>680</x>
         <y>150</y>
         <width>101</width>
         <height>41</height>
@@ -1486,7 +1603,7 @@ Skipped channels will still be recorded</string>
        <rect>
         <x>680</x>
         <y>100</y>
-        <width>81</width>
+        <width>101</width>
         <height>22</height>
        </rect>
       </property>
@@ -1504,9 +1621,9 @@ Skipped channels will still be recorded</string>
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="Viewer">
+    <widget class="QWidget" name="Viewer1">
      <attribute name="title">
-      <string>Viewer</string>
+      <string>Viewer1</string>
      </attribute>
      <widget class="Analog_plot" name="Channel_viewWidget_3" native="true">
       <property name="geometry">
@@ -1594,6 +1711,51 @@ Skipped channels will still be recorded</string>
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="Viewer3">
+     <attribute name="title">
+      <string>Viewer3</string>
+     </attribute>
+     <widget class="Analog_plot" name="Channel_viewWidget_9" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>220</y>
+        <width>1101</width>
+        <height>161</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="Analog_plot" name="Channel_viewWidget_10" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>390</y>
+        <width>1101</width>
+        <height>161</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="Analog_plot" name="Channel_viewWidget_11" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>50</y>
+        <width>1101</width>
+        <height>161</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="Analog_plot" name="Channel_viewWidget_12" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>560</y>
+        <width>1101</width>
+        <height>161</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QLabel" name="timer_info">
     <property name="geometry">
@@ -1638,7 +1800,7 @@ Skipped channels will still be recorded</string>
      <rect>
       <x>460</x>
       <y>60</y>
-      <width>41</width>
+      <width>71</width>
       <height>16</height>
      </rect>
     </property>
@@ -1689,6 +1851,12 @@ Skipped channels will still be recorded</string>
    <class>Analog_plot</class>
    <extends>QWidget</extends>
    <header>plotting</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GraphSettings</class>
+   <extends>QWidget</extends>
+   <header>GUI_utils</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
