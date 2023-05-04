@@ -1661,6 +1661,19 @@ Skipped channels will still be recorded</string>
        <string>Pulses rate</string>
       </property>
      </widget>
+     <widget class="QCheckBox" name="Counters_checkBox">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>310</y>
+        <width>121</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Scan counters</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="Viewer1">
      <attribute name="title">
@@ -1956,14 +1969,27 @@ Skipped channels will still be recorded</string>
    <widget class="QPushButton" name="StartSignalButton">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>70</y>
+      <x>930</x>
+      <y>30</y>
       <width>89</width>
       <height>25</height>
      </rect>
     </property>
     <property name="text">
      <string>Send Pulse</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="CounterScanButton">
+    <property name="geometry">
+     <rect>
+      <x>740</x>
+      <y>70</y>
+      <width>111</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Scan counters</string>
     </property>
    </widget>
   </widget>

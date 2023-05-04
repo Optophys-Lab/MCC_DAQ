@@ -11,7 +11,6 @@ Features:
 
 TODO:
 - adjust graph size based on how many are active
-- add counter values
 - add digital scan ?
 - add timer output ?
 - implement remote mode ?
@@ -44,11 +43,12 @@ log.setLevel(logging.DEBUG)
 
 VERSION = "0.3.0"
 UPDATE_GRAPHS_TIME = 100 # ms
-
+COUNTER_UPDATE_TIME = 1000 # ms
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.counter_timer = None
         self.rec_timer = None
         self.plot_timer = None
         self.path2file = Path(__file__)
@@ -126,6 +126,7 @@ class MCC_GUI(QMainWindow):
         """
         idx = self.Device_dropdown.currentIndex()
         self.mcc_board.connect_to_device(idx)
+        self.mcc_board.reset_counters()
         self.log.debug(f'Connecting to {idx} device')
         if self.mcc_board.ai_ranges:
             self.Range_combo.clear()
@@ -149,20 +150,27 @@ class MCC_GUI(QMainWindow):
         calls the MCCBoard class to start acquiring data, visualize the data
         """
         self.get_settings()
+        self.mcc_board.reset_counters()
         self.mcc_board.start_viewing(self.settings)
 
         self.reset_plots()
         self.recording_Info.setText('Viewing')
         self.plot_timer = QTimer()
         self.plot_timer.timeout.connect(self.update_plots)
-        self.plot_timer.start(100)
+        self.plot_timer.start(UPDATE_GRAPHS_TIME)
         self.s_since_start = 0
         self.rec_timer = QTimer()
         self.rec_timer.timeout.connect(self.increase_time)
         self.rec_timer.start(1000)
 
+        if self.settings.scan_counters:
+            self.counter_timer = QTimer()
+            self.counter_timer.timeout.connect(self.get_counter_vals)
+            self.counter_timer.start(COUNTER_UPDATE_TIME)
+
         self.RUNButton.setEnabled(False)
         self.RECButton.setEnabled(False)
+
         self.STOPButton.setEnabled(True)
         self.tabWidget.setCurrentIndex(2)
         self.tabWidget.setTabEnabled(1, False)
@@ -172,6 +180,7 @@ class MCC_GUI(QMainWindow):
         calls the MCCBoard class to start recording the chosen data
         """
         self.get_settings()
+        self.mcc_board.reset_counters()
         self.mcc_board.start_recording(self.settings)
 
         # self.timer = pg.QtCore.QTimer()
@@ -186,8 +195,14 @@ class MCC_GUI(QMainWindow):
         self.rec_timer.timeout.connect(self.increase_time)
         self.rec_timer.start(1000)
 
+        if self.settings.scan_counters:
+            self.counter_timer = QTimer()
+            self.counter_timer.timeout.connect(self.get_counter_vals)
+            self.counter_timer.start(COUNTER_UPDATE_TIME)
+
         self.RUNButton.setEnabled(False)
         self.RECButton.setEnabled(False)
+        self.CounterScanButton.setEnabled(False)
         self.STOPButton.setEnabled(True)
         self.tabWidget.setCurrentIndex(2)
         self.tabWidget.setTabEnabled(1, False)
@@ -202,16 +217,25 @@ class MCC_GUI(QMainWindow):
         if self.rec_timer:
             self.rec_timer.stop()
 
+        if self.counter_timer:
+            self.counter_timer.stop()
+
         self.recording_Info.setText('OFF')
         self.mcc_board.stop_recording()
 
         self.STOPButton.setEnabled(False)
         self.RUNButton.setEnabled(True)
         self.RECButton.setEnabled(True)
+        self.CounterScanButton.setEnabled(True)
         self.tabWidget.setTabEnabled(1, True)
 
         self.plot_timer = None
         self.rec_timer = None
+
+    def get_counter_vals(self):
+        counter_vals = self.mcc_board.get_single_counter()
+        for val,display in zip(counter_vals,[self.counterDisplay_1, self.counterDisplay_2]):
+            display.display(val)
 
     #### PLOTTING ######
     def reset_plots(self):
@@ -302,6 +326,8 @@ class MCC_GUI(QMainWindow):
         self.settings.add_graphsettings(self.Graph_setting_2.get_current_settings())
         self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
 
+        self.settings.scan_counters = self.Counters_checkBox.isChecked()
+
     def set_settings(self):
         voltage_set = [idx for idx, r in enumerate(self.mcc_board.ai_ranges) if r == self.settings.voltage_range]
         if not voltage_set:
@@ -324,6 +350,8 @@ class MCC_GUI(QMainWindow):
         self.Graph_setting_2.set_current_settings(self.settings)
         self.Graph_setting_3.set_current_settings(self.settings)
         self.set_nr_graths()
+
+        self.Counters_checkBox.setChecked(self.settings.scan_counters)
 
     def set_graph_options(self):
         for ele in self.channel_win:
@@ -353,6 +381,8 @@ class MCC_GUI(QMainWindow):
         self.RUNButton.clicked.connect(self.run_daq)
         self.RECButton.clicked.connect(self.record_daq)
         self.STOPButton.clicked.connect(self.stop_daq)
+
+        self.CounterScanButton.clicked.connect(self.get_counter_vals)
 
         self.SettingsSaveButton.clicked.connect(self.save_settings)
         self.SettingsLoadButton.clicked.connect(self.load_settings)

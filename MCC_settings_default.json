@@ -1,4 +1,5 @@
 {
+    "scan_counters": false,
     "num_channels": 6,
     "channel_list": [
         {

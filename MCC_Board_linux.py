@@ -131,6 +131,10 @@ class MCCBoard:
             raise RuntimeError('\nError: The specified DAQ device does not '
                                'support hardware paced analog input')
 
+        ctr_device = self.daq_device.get_ctr_device()
+        ctr_info = ctr_device.get_info()
+        dev_num_counters = ctr_info.get_num_ctrs()
+        self.log.info(f"This board has {dev_num_counters} counters")
         # Establish a connection to the DAQ device.
         descriptor = self.daq_device.get_descriptor()
         self.log.debug(f'Connecting to {descriptor.dev_string}')
@@ -698,6 +702,54 @@ class MCCBoard:
 
         # free buffer before exiting the Thread
         self.memhandle = None
+
+    def reset_counters(self):
+        self.log.debug("Resetting counters")
+        if OS_TYPE == 'Linux':
+            self.reset_counters_linux()
+        elif OS_TYPE == 'Windows':
+            self.reset_counters_windows()
+
+    def reset_counters_windows(self):
+        """windows library routine to reset counters"""
+        ctr_info = self.daq_device.get_ctr_info()
+        self.dev_counters = []
+        for idx in range(len(ctr_info)):
+            counter_num = ctr_info.chan_info[0].channel_num
+            self.dev_counters.append(counter_num)
+            ul.c_clear(self.board_num, counter_num)
+
+    def reset_counters_linux(self):
+        """linux library routine to reset counters"""
+        ctr_device = self.daq_device.get_ctr_device()
+        ctr_info = ctr_device.get_info()
+        dev_num_counters = ctr_info.get_num_ctrs()
+        self.dev_counters = []
+        for counter_number in range(dev_num_counters):
+            ctr_device.c_clear(counter_number)
+            self.dev_counters.append(counter_number)
+
+    def get_single_counter(self) -> list:
+        self.log.debug("Reading single value from counters")
+        if OS_TYPE == 'Linux':
+            return self.get_single_counter_linux()
+        elif OS_TYPE == 'Windows':
+            return self.get_single_counter_windows()
+
+    def get_single_counter_linux(self) -> list:
+        ctr_device = self.daq_device.get_ctr_device()
+        counter_values = []
+        for counter_num in self.dev_counters:
+            counter_value = ctr_device.c_in(counter_num)
+            counter_values.append(counter_value)
+        return counter_values
+
+    def get_single_counter_windows(self) -> list:
+        counter_values = []
+        for counter_num in self.dev_counters:
+            counter_value = ul.c_in_32(self.board_num, counter_num)
+            counter_values.append(counter_value)
+        return counter_values
 
     def release_device(self):
         if OS_TYPE == 'Linux':

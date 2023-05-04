@@ -201,6 +201,7 @@ class MyBinaryFile_Reader:
 
 class MCC_settings:
     def __init__(self):
+        self.scan_counters = False
         self.num_channels = None
         self.channel_list = []
         self.device = None
