@@ -1,3 +1,24 @@
+"""
+Tool to record using MCC DAQ Devices.
+
+Author: Artur
+Contact: artur.schneider@biologie.uni-freiburg.de
+
+Features:
+- recording selected channels in binary file
+- visualization of selected channels in configurable graphs
+- settings can be set/loaded from file
+
+TODO:
+- adjust graph size based on how many are active
+- add counter values
+- add digital scan ?
+- add timer output ?
+- implement remote mode ?
+- implement trigger mode ? wait for digital signal to start recording ?
+"""
+
+
 import json
 import logging
 import queue
@@ -21,12 +42,8 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.2.5"
-
-"""
-#TODO
-- limit the selection of channels to active graths!
-"""
+VERSION = "0.3.0"
+UPDATE_GRAPHS_TIME = 100 # ms
 
 
 class MCC_GUI(QMainWindow):
@@ -162,7 +179,7 @@ class MCC_GUI(QMainWindow):
         self.recording_Info.setText('ON')
         self.plot_timer = QTimer()
         self.plot_timer.timeout.connect(self.update_plots)
-        self.plot_timer.start(100)
+        self.plot_timer.start(UPDATE_GRAPHS_TIME)
 
         self.s_since_start = 0
         self.rec_timer = QTimer()
@@ -295,6 +312,7 @@ class MCC_GUI(QMainWindow):
 
         self.Range_combo.setCurrentIndex(voltage_set)
         self.SamplingRateSpin.setValue(self.settings.sampling_rate)
+        self.set_graph_options()
         for c_id, channel in enumerate(self.settings.channel_list):
             self.channel_labels[c_id].setStyleSheet(f"color: {channel['color']};")
             self.channel_names[c_id].setText(channel['name'])
@@ -306,6 +324,14 @@ class MCC_GUI(QMainWindow):
         self.Graph_setting_2.set_current_settings(self.settings)
         self.Graph_setting_3.set_current_settings(self.settings)
         self.set_nr_graths()
+
+    def set_graph_options(self):
+        for ele in self.channel_win:
+            ele.clear()
+            elements = [PlotWindowEnum(-1).name]
+            elements.extend(list(self.settings.graphsettings.keys()))
+            ele.addItems(elements)
+            ele.setCurrentIndex(0)
 
     def set_nr_graths(self):
         for idx in range(3):
