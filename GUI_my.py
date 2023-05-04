@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 from MCC_Board_linux import MCCBoard
-from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE
+from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS
 
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
@@ -25,7 +25,6 @@ VERSION = "0.2.5"
 
 """
 #TODO
-- add nr_of grapth to settings file
 - limit the selection of channels to active graths!
 """
 
@@ -281,6 +280,7 @@ class MCC_GUI(QMainWindow):
         self.settings.sampling_rate = self.SamplingRateSpin.value()
         self.settings.get_active_channels()
 
+        self.settings.graphsettings={}
         self.settings.add_graphsettings(self.Graph_setting_1.get_current_settings())
         self.settings.add_graphsettings(self.Graph_setting_2.get_current_settings())
         self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
@@ -300,9 +300,25 @@ class MCC_GUI(QMainWindow):
             self.channel_names[c_id].setText(channel['name'])
             self.channel_rec[c_id].setChecked(channel['active'])
             self.channel_win[c_id].setCurrentText(PlotWindowEnum(channel["win"]).name)
+
+
         self.Graph_setting_1.set_current_settings(self.settings)
         self.Graph_setting_2.set_current_settings(self.settings)
         self.Graph_setting_3.set_current_settings(self.settings)
+        self.set_nr_graths()
+
+    def set_nr_graths(self):
+        for idx in range(3):
+            counter = 0
+            for active_graphs in self.settings.graphsettings.keys():
+                if active_graphs in [el.name for el in list(PlotWindowEnum)[1+idx*MAX_GRAPHS:5+idx*MAX_GRAPHS]]:
+                    counter += 1
+            if idx == 0 :
+                self.Viewer1_Combo.setCurrentText(str(counter))
+            elif idx == 1:
+                self.Viewer2_Combo.setCurrentText(str(counter))
+            elif idx == 2:
+                self.Viewer3_Combo.setCurrentText(str(counter))
 
     #### APP MAINTANCE #######
     def ConnectSignals(self):

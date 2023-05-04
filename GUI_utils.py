@@ -268,7 +268,21 @@ class MCC_settings:
             json.dump(dict_to_save, fi, indent=4)
 
     def add_graphsettings(self, graphsetting :dict):
+        # # throw away old settings
+        # if "A" in graphsetting.keys():
+        #     for graph_name in [el.name for el in list(PlotWindowEnum)[1:5]]:
+        #         self.graphsettings.pop(graph_name, None)
+        # elif "E" in graphsetting.keys():
+        #     for graph_name in [el.name for el in list(PlotWindowEnum)[5:9]]:
+        #         self.graphsettings.pop(graph_name, None)
+        # elif "J" in graphsetting.keys():
+        #     for graph_name in [el.name for el in list(PlotWindowEnum)[9:13]]:
+        #         self.graphsettings.pop(graph_name, None)
+
         self.graphsettings.update({**graphsetting})
+
+
+
 
 if __name__ == '__main__':
     settings = MCC_settings()
