@@ -7,11 +7,11 @@ import pyqtgraph as pg
 from datetime import datetime
 # from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 from PyQt6.QtWidgets import QWidget, QCheckBox, QLabel, QSpinBox, QHBoxLayout, QVBoxLayout
-from config import history_dur, triggered_dur
 from GUI_utils import MCC_settings, PlotWindowEnum, TimeBases, YRanges
 
-# Analog_plot ------------------------------------------------------
+history_dur = 10
 
+# Analog_plot ------------------------------------------------------
 class Analog_plot(QWidget):
 
     def __init__(self, parent=None):
