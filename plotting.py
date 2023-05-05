@@ -13,9 +13,10 @@ history_dur = 10
 
 # Analog_plot ------------------------------------------------------
 class MultiplotWidget(QWidget):
-    def __init__(self, parent=None, nr_plots = 4, idx = 0):
+    def __init__(self, parent=None, nr_plots = 3, idx = 0):
         super().__init__(parent)
         self._nr_plots = nr_plots
+        self.layout = QVBoxLayout(self)
         self.list_of_plots = []
         self.adjust_current_widget()
 
@@ -24,16 +25,24 @@ class MultiplotWidget(QWidget):
         return self._nr_plots
     @nr_plots.setter
     def nr_plots(self,value:int):
-        if 0 < value <=MAX_GRAPHS:
+        if 0 <= value <=MAX_GRAPHS:
             self._nr_plots = value
         else:
             self._nr_plots = MAX_GRAPHS
         self.adjust_current_widget()
 
     def adjust_current_widget(self):
+        for plot in  self.list_of_plots:
+            self.layout.removeWidget(plot)
+        self.list_of_plots = []
         for idx in range(self.nr_plots):
-            self.list_of_plots.append(Analog_plot(self))
-
+            plot = Analog_plot(self)
+            self.layout.addWidget(plot)
+            self.list_of_plots.append(plot)
+        if self.nr_plots == 0:
+            label = QLabel('NO Graphs are active in this window')
+            self.layout.addWidget(label)
+            self.list_of_plots.append(label)
 
 class Analog_plot(QWidget):
 

@@ -115,7 +115,7 @@ Devices</string>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="ViewerSettings">
      <attribute name="title">
@@ -1679,43 +1679,13 @@ Skipped channels will still be recorded</string>
      <attribute name="title">
       <string>Viewer1</string>
      </attribute>
-     <widget class="Analog_plot" name="Channel_viewWidget_3" native="true">
+     <widget class="MultiplotWidget" name="Channel_viewWidget_1" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>390</y>
+        <y>20</y>
         <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_1" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>50</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_4" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>560</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_2" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>220</y>
-        <width>1101</width>
-        <height>161</height>
+        <height>691</height>
        </rect>
       </property>
      </widget>
@@ -1724,43 +1694,13 @@ Skipped channels will still be recorded</string>
      <attribute name="title">
       <string>Viewer2</string>
      </attribute>
-     <widget class="Analog_plot" name="Channel_viewWidget_5" native="true">
+     <widget class="MultiplotWidget" name="Channel_viewWidget_2" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>50</y>
+        <y>20</y>
         <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_6" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>220</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_7" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>390</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_8" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>560</y>
-        <width>1101</width>
-        <height>161</height>
+        <height>691</height>
        </rect>
       </property>
      </widget>
@@ -1769,43 +1709,13 @@ Skipped channels will still be recorded</string>
      <attribute name="title">
       <string>Viewer3</string>
      </attribute>
-     <widget class="Analog_plot" name="Channel_viewWidget_9" native="true">
+     <widget class="MultiplotWidget" name="Channel_viewWidget_3" native="true">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>220</y>
+        <y>20</y>
         <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_10" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>390</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_11" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>50</y>
-        <width>1101</width>
-        <height>161</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="Analog_plot" name="Channel_viewWidget_12" native="true">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>560</y>
-        <width>1101</width>
-        <height>161</height>
+        <height>691</height>
        </rect>
       </property>
      </widget>
@@ -2007,15 +1917,15 @@ Skipped channels will still be recorded</string>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>Analog_plot</class>
-   <extends>QWidget</extends>
-   <header>plotting</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>GraphSettings</class>
    <extends>QWidget</extends>
    <header>GUI_utils</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MultiplotWidget</class>
+   <extends>QWidget</extends>
+   <header>plotting</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

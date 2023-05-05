@@ -11,7 +11,6 @@ Features:
 - settings can be set/loaded from file
 
 TODO:
-- adjust graph size based on how many are active
 - implement remote mode ?
 - implement trigger mode ? wait for digital signal to start recording ?
 """
@@ -93,6 +92,10 @@ class MCC_GUI(QMainWindow):
         self.Graph_setting_2.adjust_current_widget()
         self.Graph_setting_3.idx = 2
         self.Graph_setting_3.adjust_current_widget()
+
+        self.Channel_viewWidget_1.idx = 0
+        self.Channel_viewWidget_2.idx = 1
+        self.Channel_viewWidget_3.idx = 2
 
         self.ConnectSignals()
         for ele in self.channel_win:
@@ -256,14 +259,21 @@ class MCC_GUI(QMainWindow):
 
     #### PLOTTING ######
     def reset_plots(self):
-        self.plotting_widgets = [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3,
-                                 self.Channel_viewWidget_4, self.Channel_viewWidget_5, self.Channel_viewWidget_6,
-                                 self.Channel_viewWidget_7, self.Channel_viewWidget_8]
+        self.plotting_widgets = []
+        plotting_indx = []
+        for multi_view_graph in [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3]:
+            self.plotting_widgets.extend(multi_view_graph.list_of_plots)
+            plotting_indx.extend([val + multi_view_graph.idx*MAX_GRAPHS
+                                  for val in range(len(multi_view_graph.list_of_plots))])
+
+        # self.plotting_widgets = [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3,
+        #                          self.Channel_viewWidget_4, self.Channel_viewWidget_5, self.Channel_viewWidget_6,
+        #                          self.Channel_viewWidget_7, self.Channel_viewWidget_8]
         self.plotting_indexing_vec = list()
 
 
-        for win_id in range(8):
-            self.plotting_widgets[win_id].reset(self.settings, win_id=win_id)
+        for idx, win_id in enumerate(plotting_indx):
+            self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
             index_vec = []
             for ch_id, channel in enumerate(self.settings.channel_list):
                 if channel['win'] == win_id and channel['active']:
@@ -372,11 +382,17 @@ class MCC_GUI(QMainWindow):
 
     def set_graph_options(self):
         for ele in self.channel_win:
+            curr_element = ele.currentText()
             ele.clear()
             elements = [PlotWindowEnum(-1).name]
             elements.extend(list(self.settings.graphsettings.keys()))
             ele.addItems(elements)
-            ele.setCurrentIndex(0)
+            try:
+                next_index = [idx for idx,name in enumerate(elements) if name == curr_element][0]
+                ele.setCurrentIndex(next_index)
+            except IndexError:
+                ele.setCurrentIndex(0)
+            #TODO keep the previous index if item remains in list ?
 
     def set_nr_graths(self):
         for idx in range(3):
@@ -411,12 +427,23 @@ class MCC_GUI(QMainWindow):
 
     def adjust_viewer1(self):
         self.Graph_setting_1.nr_of_graphs = int(self.Viewer1_Combo.currentText())
+        self.Channel_viewWidget_1.nr_plots = int(self.Viewer1_Combo.currentText())
+        self.get_settings()
+        self.set_graph_options()
+
 
     def adjust_viewer2(self):
         self.Graph_setting_2.nr_of_graphs = int(self.Viewer2_Combo.currentText())
+        self.Channel_viewWidget_2.nr_plots = int(self.Viewer2_Combo.currentText())
+        self.get_settings()
+        self.set_graph_options()
 
     def adjust_viewer3(self):
         self.Graph_setting_3.nr_of_graphs = int(self.Viewer3_Combo.currentText())
+        self.Channel_viewWidget_3.nr_plots = int(self.Viewer3_Combo.currentText())
+        self.get_settings()
+        self.set_graph_options()
+
 
     def app_is_exiting(self):
         if self.mcc_board.is_recording or self.mcc_board.is_viewing:
