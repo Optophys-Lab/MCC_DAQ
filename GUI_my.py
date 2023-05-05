@@ -265,12 +265,7 @@ class MCC_GUI(QMainWindow):
             self.plotting_widgets.extend(multi_view_graph.list_of_plots)
             plotting_indx.extend([val + multi_view_graph.idx*MAX_GRAPHS
                                   for val in range(len(multi_view_graph.list_of_plots))])
-
-        # self.plotting_widgets = [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3,
-        #                          self.Channel_viewWidget_4, self.Channel_viewWidget_5, self.Channel_viewWidget_6,
-        #                          self.Channel_viewWidget_7, self.Channel_viewWidget_8]
         self.plotting_indexing_vec = list()
-
 
         for idx, win_id in enumerate(plotting_indx):
             self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
