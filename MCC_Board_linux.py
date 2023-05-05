@@ -10,7 +10,7 @@ import time
 import datetime
 
 import numpy as np
-import uldaq.ul_exception
+
 
 from GUI_utils import MCC_settings
 
@@ -18,10 +18,11 @@ OS_TYPE = platform.system()
 if OS_TYPE == 'Linux':
     from uldaq import (get_daq_device_inventory, DaqDevice, AInScanFlag,
                        AiInputMode, AiQueueElement, create_float_buffer,
-                       ScanStatus, InterfaceType, Range)
+                       ScanStatus, InterfaceType, TmrIdleState, PulseOutOption)
     from uldaq import ScanOption as ScanOptions
     from uldaq import Range as ULRange
     from uldaq import ScanStatus as Status
+    import uldaq.ul_exception
 
 elif OS_TYPE == 'Windows':
     """
@@ -31,7 +32,7 @@ elif OS_TYPE == 'Windows':
     from mcculw import ul
     from mcculw.ul import get_daq_device_inventory, a_input_mode, create_daq_device
     from mcculw.device_info import DaqDeviceInfo as DaqDevice
-    from mcculw.enums import InterfaceType, ErrorCode, ScanOptions, ULRange, Status, FunctionType
+    from mcculw.enums import InterfaceType, ErrorCode, ScanOptions, ULRange, Status, FunctionType, CounterChannelType
     from mcculw.enums import AnalogInputMode as AiInputMode
     from mcculw.ul import ULError
 
@@ -50,6 +51,7 @@ class MCCBoard:
         self.data_queues = None
         self.record_tofile = True
         self.is_recording = False
+        self.is_pulsing = False
         self.file_name = 'test.bin'
         self.recording_thread = None
         self.ai_ranges = None
@@ -61,6 +63,7 @@ class MCCBoard:
         self.devices = None
         self.daq_device = None
         self.board_num = 0
+        self.timer_number = 0
         self.buffer_size_seconds = 2
         self.memhandle = None
         self.stop_recordingevent = None
@@ -167,7 +170,7 @@ class MCCBoard:
         self.sampling_rate = settings.sampling_rate
         self.file_header = settings.to_header()
 
-        #self.data_queues = [Queue(10000)] * self.num_channels
+        # self.data_queues = [Queue(10000)] * self.num_channels
         self.data_queues = [Queue(1000) for _ in range(self.num_channels)]
         # self.stop_recordingevent = event
         Path("data").mkdir(exist_ok=True)
@@ -204,7 +207,8 @@ class MCCBoard:
 
         elif OS_TYPE == 'Windows':
             ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
-
+        if self.is_pulsing:
+            self.stop_pulsing()
         print(f"Stopping recording after {(time.monotonic() - self.start_rec_time):0.1f} s")
         self.recording_thread.join()
         # for queue in self.data_queues: # wait until the data showing is empty
@@ -402,7 +406,6 @@ class MCCBoard:
         while status == Status.IDLE:
             status, _ = ai_device.get_scan_status()
 
-        # TODO update from here
         # Create a file for storing the data
         with open(self.file_name, 'wb') as fi:
             self.log.info(f'Writing data to {self.file_name}')
@@ -544,9 +547,9 @@ class MCCBoard:
         elif OS_TYPE == 'Windows':
             raise NotImplementedError
             self.log.debug('Started recording-thread via Windows routine')
-            #self.start_rec_time = time.monotonic()
-            #self.recording_thread = Thread(target=self.start_recording_windows)
-            #self.recording_thread.start()
+            # self.start_rec_time = time.monotonic()
+            # self.recording_thread = Thread(target=self.start_recording_windows)
+            # self.recording_thread.start()
         else:
             raise NotImplementedError
 
@@ -582,8 +585,6 @@ class MCCBoard:
         # Wait for the scan to start fully
         while status == Status.IDLE:
             status, _ = ai_device.get_scan_status()
-
-
 
         # Start the write loop
         prev_count = 0
@@ -635,14 +636,14 @@ class MCCBoard:
                     # write_chunk_array
                     # write_chunk_array[first_chunk_size:] = np.frombuffer(self.memhandle, count=curr_index, offset=0)
                     if second_chunk_size == 0:
-                        #write_chunk_array[:] = self.memhandle[prev_index:prev_index + write_chunk_size]
+                        # write_chunk_array[:] = self.memhandle[prev_index:prev_index + write_chunk_size]
                         pass
                     else:
                         try:
                             write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
                         except ValueError:
                             print("a")
-                        # todo ! This happens sometimes !!! check Y
+
 
                 else:
                     # write_chunk_array = np.copy(np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index))
@@ -751,12 +752,67 @@ class MCCBoard:
             counter_values.append(counter_value)
         return counter_values
 
+    def start_pulsing(self, freq: float = 30, duty_cycle: (float, None) = None):
+        self.log.debug("Starting pulsing")
+        pulse_width = 5  # ms
+        if duty_cycle is None:
+            duty_cycle = pulse_width / (1000 / freq)
+
+        if OS_TYPE == 'Linux':
+            self.start_pulsing_linux(freq, duty_cycle)
+        elif OS_TYPE == 'Windows':
+            self.start_pulsing_windows(freq, duty_cycle)
+        self.is_pulsing = True
+    def start_pulsing_windows(self, freq: float = 30, duty_cycle: (float, None) = 0.15):
+        ctr_info = self.daq_device.get_ctr_info()
+
+        # Find a pulse timer channel on the board
+        first_chan = next((channel for channel in ctr_info.chan_info
+                           if channel.type == CounterChannelType.CTRPULSE),
+                          None)
+
+        if not first_chan:
+            self.log.error('Error: The DAQ device does not support pulse timers')
+
+        self.timer_number, = first_chan.channel_num
+        actual_frequency, actual_duty_cycle, _ = ul.pulse_out_start(
+            self.board_num, self.timer_number, freq, duty_cycle)
+        self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
+                      f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
+
+    def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15):
+
+        pulse_count = 0  # for continious operation
+        initial_delay = 0
+
+        tmr_device = self.daq_device.get_tmr_device()
+        (actual_frequency,
+         actual_duty_cycle,
+         _) = tmr_device.pulse_out_start(self.timer_number, freq,
+                                         duty_cycle, pulse_count,
+                                         initial_delay, TmrIdleState.LOW,
+                                         PulseOutOption.DEFAULT)
+
+        self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
+                      f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
+
+    def stop_pulsing(self):
+        self.log.debug("stopping pulsing")
+        if OS_TYPE == 'Linux':
+            tmr_device = self.daq_device.get_tmr_device()
+            tmr_device.pulse_out_stop(self.timer_number)
+        elif OS_TYPE == 'Windows':
+            ul.pulse_out_stop(self.board_num, self.timer_number)
+        self.is_pulsing = False
+
     def release_device(self):
         if OS_TYPE == 'Linux':
             if self.daq_device:
+                self.stop_pulsing()
                 self.daq_device.disconnect()
                 self.daq_device.release()
         else:
+            self.stop_pulsing()
             if self.memhandle:
                 # Free the buffer in a finally block to prevent a memory leak.
                 ul.win_buf_free(self.memhandle)

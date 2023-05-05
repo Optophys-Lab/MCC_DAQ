@@ -7,11 +7,34 @@ import pyqtgraph as pg
 from datetime import datetime
 # from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 from PyQt6.QtWidgets import QWidget, QCheckBox, QLabel, QSpinBox, QHBoxLayout, QVBoxLayout
-from GUI_utils import MCC_settings, PlotWindowEnum, TimeBases, YRanges
+from GUI_utils import MCC_settings, PlotWindowEnum, TimeBases, YRanges, MAX_GRAPHS
 
 history_dur = 10
 
 # Analog_plot ------------------------------------------------------
+class MultiplotWidget(QWidget):
+    def __init__(self, parent=None, nr_plots = 4, idx = 0):
+        super().__init__(parent)
+        self._nr_plots = nr_plots
+        self.list_of_plots = []
+        self.adjust_current_widget()
+
+    @property
+    def nr_plots(self) -> int:
+        return self._nr_plots
+    @nr_plots.setter
+    def nr_plots(self,value:int):
+        if 0 < value <=MAX_GRAPHS:
+            self._nr_plots = value
+        else:
+            self._nr_plots = MAX_GRAPHS
+        self.adjust_current_widget()
+
+    def adjust_current_widget(self):
+        for idx in range(self.nr_plots):
+            self.list_of_plots.append(Analog_plot(self))
+
+
 class Analog_plot(QWidget):
 
     def __init__(self, parent=None):

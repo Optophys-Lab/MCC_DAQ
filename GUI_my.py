@@ -6,13 +6,12 @@ Contact: artur.schneider@biologie.uni-freiburg.de
 
 Features:
 - recording selected channels in binary file
+- pulsation functionality
 - visualization of selected channels in configurable graphs
 - settings can be set/loaded from file
 
 TODO:
 - adjust graph size based on how many are active
-- add digital scan ?
-- add timer output ?
 - implement remote mode ?
 - implement trigger mode ? wait for digital signal to start recording ?
 """
@@ -41,7 +40,7 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.3.0"
+VERSION = "0.3.5"
 UPDATE_GRAPHS_TIME = 100 # ms
 COUNTER_UPDATE_TIME = 1000 # ms
 
@@ -233,9 +232,27 @@ class MCC_GUI(QMainWindow):
         self.rec_timer = None
 
     def get_counter_vals(self):
+        """
+        polls mcc board for the counters status
+        display available counter values
+        """
         counter_vals = self.mcc_board.get_single_counter()
         for val,display in zip(counter_vals,[self.counterDisplay_1, self.counterDisplay_2]):
             display.display(val)
+
+    def start_stop_pulses(self):
+        """
+        calls mcc_board to start or stop pulsing with a chosen frequency
+        """
+        if not self.mcc_board.is_pulsing:
+            #start pulsing
+            self.mcc_board.start_pulsing(self.PulsesSpin.value())
+            self.StartSignalButton.setText('Stop Pulsing')
+        else:
+            #stop pulsing
+            self.StartSignalButton.setText('Start Pulsing')
+            self.mcc_board.stop_pulsing()
+
 
     #### PLOTTING ######
     def reset_plots(self):
@@ -383,6 +400,7 @@ class MCC_GUI(QMainWindow):
         self.STOPButton.clicked.connect(self.stop_daq)
 
         self.CounterScanButton.clicked.connect(self.get_counter_vals)
+        self.StartSignalButton.clicked.connect(self.start_stop_pulses)
 
         self.SettingsSaveButton.clicked.connect(self.save_settings)
         self.SettingsLoadButton.clicked.connect(self.load_settings)
