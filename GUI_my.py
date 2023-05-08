@@ -40,10 +40,10 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
-HOST = "localhost"
+HOST = "localhost" # if connecting to remote, use the IP of the current machine
 PORT = 8800
 
 
@@ -57,6 +57,7 @@ class MCC_GUI(QMainWindow):
         self.path2file = Path(__file__)
         uic.loadUi(self.path2file.parent / 'GUI' / 'GUI.ui', self)
         self.setWindowTitle('MCCRecorder v.%s' % VERSION)
+
         self.log = logging.getLogger('GUI')
         self.log.setLevel(logging.DEBUG)
         self.daq_device = None
@@ -65,6 +66,11 @@ class MCC_GUI(QMainWindow):
         self.RUNButton.setIcon(QtGui.QIcon("GUI/icons/play.svg"))
         self.RECButton.setIcon(QtGui.QIcon("GUI/icons/record.svg"))
         self.STOPButton.setIcon(QtGui.QIcon("GUI/icons/stop.svg"))
+        self.RemoteModeButton.setIcon(QtGui.QIcon("GUI/icons/Signal.svg"))
+        self.tabWidget.setTabIcon(1, QtGui.QIcon("GUI/icons/WrenchScrewdriver.svg"))
+        self.tabWidget.setTabIcon(2, QtGui.QIcon("GUI/icons/Window.svg"))
+        self.tabWidget.setTabIcon(3, QtGui.QIcon("GUI/icons/Window.svg"))
+        self.tabWidget.setTabIcon(4, QtGui.QIcon("GUI/icons/Window.svg"))
         self.settings = MCC_settings()
         self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
         self.socket_comm.create_socket()
@@ -471,6 +477,7 @@ class MCC_GUI(QMainWindow):
     def enter_remote_mode(self):
         self.Client_label.setText(f"Connected to Client:\n{self.socket_comm.addr}")
         self.RemoteModeButton.setText("EXIT\nREMOTE-mode")
+        self.RemoteModeButton.setIcon(QtGui.QIcon("GUI/icons/SignalSlash.svg"))
         self.RUNButton.setEnabled(False)
         self.RECButton.setEnabled(False)
         self.tabWidget.setTabEnabled(1, False)

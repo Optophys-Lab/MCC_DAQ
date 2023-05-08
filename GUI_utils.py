@@ -299,6 +299,7 @@ class RemoteConnDialog(QtWidgets.QDialog):
         self.setWindowTitle('Remote Connection')
         self.abort_button = QtWidgets.QPushButton("Abort")
         self.abort_button.clicked.connect(self.stopwaiting)
+        self.abort_button.setIcon(QtGui.QIcon("GUI/icons/HandRaised.svg"))
         self.label = QtWidgets.QLabel("waiting for remote connection...")
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.label)
