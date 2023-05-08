@@ -9,12 +9,12 @@ Features:
 - pulsation functionality
 - visualization of selected channels in configurable graphs
 - settings can be set/loaded from file
+- can be controlled remotely via socket connection
+- only 16 channel model 1608 was tested
 
-TODO:
-- implement remote mode ?
+maybe:
 - implement trigger mode ? wait for digital signal to start recording ?
 """
-
 
 import json
 import logging
@@ -32,20 +32,25 @@ from pathlib import Path
 from datetime import datetime
 
 from MCC_Board_linux import MCCBoard
-from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS
+from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
+from socket_utils import SocketComm
 
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.3.5"
-UPDATE_GRAPHS_TIME = 100 # ms
-COUNTER_UPDATE_TIME = 1000 # ms
+VERSION = "0.4.0"
+UPDATE_GRAPHS_TIME = 100  # ms
+COUNTER_UPDATE_TIME = 1000  # ms
+HOST = "localhost"
+PORT = 8800
+
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.is_remote_ctr = False
         self.counter_timer = None
         self.rec_timer = None
         self.plot_timer = None
@@ -61,6 +66,8 @@ class MCC_GUI(QMainWindow):
         self.RECButton.setIcon(QtGui.QIcon("GUI/icons/record.svg"))
         self.STOPButton.setIcon(QtGui.QIcon("GUI/icons/stop.svg"))
         self.settings = MCC_settings()
+        self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
+        self.socket_comm.create_socket()
 
         # Dynamically Create ?
         self.channel_labels = [self.CH_0, self.CH_1, self.CH_2, self.CH_3, self.CH_4, self.CH_5, self.CH_6, self.CH_7,
@@ -118,7 +125,7 @@ class MCC_GUI(QMainWindow):
             self.ConnectButton.setEnabled(True)
         self.log.debug(f'Scanned for available devices')
 
-        if len(devices)==1:
+        if len(devices) == 1:
             self.connect_to_device()
             self.log.debug(f'Connecting to only device automatically')
 
@@ -143,6 +150,7 @@ class MCC_GUI(QMainWindow):
                 self.channel_names[c_id].setEnabled(True)
                 self.channel_rec[c_id].setEnabled(True)
                 self.channel_win[c_id].setEnabled(True)
+            # pop channels not available ?
 
             self.set_settings()
         self.ScanDevButton.setEnabled(False)
@@ -226,10 +234,11 @@ class MCC_GUI(QMainWindow):
         self.mcc_board.stop_recording()
 
         self.STOPButton.setEnabled(False)
-        self.RUNButton.setEnabled(True)
-        self.RECButton.setEnabled(True)
-        self.CounterScanButton.setEnabled(True)
-        self.tabWidget.setTabEnabled(1, True)
+        if not self.is_remote_ctr:
+            self.RUNButton.setEnabled(True)
+            self.RECButton.setEnabled(True)
+            self.CounterScanButton.setEnabled(True)
+            self.tabWidget.setTabEnabled(1, True)
 
         self.plot_timer = None
         self.rec_timer = None
@@ -240,7 +249,7 @@ class MCC_GUI(QMainWindow):
         display available counter values
         """
         counter_vals = self.mcc_board.get_single_counter()
-        for val,display in zip(counter_vals,[self.counterDisplay_1, self.counterDisplay_2]):
+        for val, display in zip(counter_vals, [self.counterDisplay_1, self.counterDisplay_2]):
             display.display(val)
 
     def start_stop_pulses(self):
@@ -248,14 +257,13 @@ class MCC_GUI(QMainWindow):
         calls mcc_board to start or stop pulsing with a chosen frequency
         """
         if not self.mcc_board.is_pulsing:
-            #start pulsing
+            # start pulsing
             self.mcc_board.start_pulsing(self.PulsesSpin.value())
             self.StartSignalButton.setText('Stop Pulsing')
         else:
-            #stop pulsing
+            # stop pulsing
             self.StartSignalButton.setText('Start Pulsing')
             self.mcc_board.stop_pulsing()
-
 
     #### PLOTTING ######
     def reset_plots(self):
@@ -263,7 +271,7 @@ class MCC_GUI(QMainWindow):
         plotting_indx = []
         for multi_view_graph in [self.Channel_viewWidget_1, self.Channel_viewWidget_2, self.Channel_viewWidget_3]:
             self.plotting_widgets.extend(multi_view_graph.list_of_plots)
-            plotting_indx.extend([val + multi_view_graph.idx*MAX_GRAPHS
+            plotting_indx.extend([val + multi_view_graph.idx * MAX_GRAPHS
                                   for val in range(len(multi_view_graph.list_of_plots))])
         self.plotting_indexing_vec = list()
 
@@ -318,14 +326,20 @@ class MCC_GUI(QMainWindow):
         settings_file = QFileDialog.getOpenFileName(self, 'Open settings file', "",
                                                     "Settings files (*.json)")
         if settings_file[0]:
-            self.settings.from_file(Path(settings_file[0]))
-            self.set_settings()
+            self.load_settings_fromfile(settings_file[0])
+
+    def load_settings_fromfile(self, settings_file):
+        self.settings.from_file(Path(settings_file))
+        self.set_settings()
 
     def get_settings(self):
         self.settings.channel_list = list()
         for ch_id, (ch_name, ch_rec, ch_win) in enumerate(zip(self.channel_names, self.channel_rec, self.channel_win)):
-            if not ch_name.isEnabled():  # skip inactvated channels
-                continue
+            #if not ch_name.isEnabled():  # skip inactvated channels
+            #    continue
+            # this lead to a bug where the channel list was not updated when a channel was disabled because whole tab
+            # was disabled
+            #TODO find a better way to adjust number of channels!
             channel_dict = {}
             channel_dict['id'] = ch_id
             channel_dict['name'] = ch_name.text()
@@ -343,7 +357,7 @@ class MCC_GUI(QMainWindow):
         self.settings.sampling_rate = self.SamplingRateSpin.value()
         self.settings.get_active_channels()
 
-        self.settings.graphsettings={}
+        self.settings.graphsettings = {}
         self.settings.add_graphsettings(self.Graph_setting_1.get_current_settings())
         self.settings.add_graphsettings(self.Graph_setting_2.get_current_settings())
         self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
@@ -367,7 +381,6 @@ class MCC_GUI(QMainWindow):
             self.channel_rec[c_id].setChecked(channel['active'])
             self.channel_win[c_id].setCurrentText(PlotWindowEnum(channel["win"]).name)
 
-
         self.Graph_setting_1.set_current_settings(self.settings)
         self.Graph_setting_2.set_current_settings(self.settings)
         self.Graph_setting_3.set_current_settings(self.settings)
@@ -383,19 +396,18 @@ class MCC_GUI(QMainWindow):
             elements.extend(list(self.settings.graphsettings.keys()))
             ele.addItems(elements)
             try:
-                next_index = [idx for idx,name in enumerate(elements) if name == curr_element][0]
+                next_index = [idx for idx, name in enumerate(elements) if name == curr_element][0]
                 ele.setCurrentIndex(next_index)
             except IndexError:
                 ele.setCurrentIndex(0)
-            #TODO keep the previous index if item remains in list ?
 
     def set_nr_graths(self):
         for idx in range(3):
             counter = 0
             for active_graphs in self.settings.graphsettings.keys():
-                if active_graphs in [el.name for el in list(PlotWindowEnum)[1+idx*MAX_GRAPHS:5+idx*MAX_GRAPHS]]:
+                if active_graphs in [el.name for el in list(PlotWindowEnum)[1 + idx * MAX_GRAPHS:5 + idx * MAX_GRAPHS]]:
                     counter += 1
-            if idx == 0 :
+            if idx == 0:
                 self.Viewer1_Combo.setCurrentText(str(counter))
             elif idx == 1:
                 self.Viewer2_Combo.setCurrentText(str(counter))
@@ -420,12 +432,13 @@ class MCC_GUI(QMainWindow):
         self.Viewer2_Combo.currentIndexChanged.connect(self.adjust_viewer2)
         self.Viewer3_Combo.currentIndexChanged.connect(self.adjust_viewer3)
 
+        self.RemoteModeButton.clicked.connect(self.remote_mode)
+
     def adjust_viewer1(self):
         self.Graph_setting_1.nr_of_graphs = int(self.Viewer1_Combo.currentText())
         self.Channel_viewWidget_1.nr_plots = int(self.Viewer1_Combo.currentText())
         self.get_settings()
         self.set_graph_options()
-
 
     def adjust_viewer2(self):
         self.Graph_setting_2.nr_of_graphs = int(self.Viewer2_Combo.currentText())
@@ -439,6 +452,108 @@ class MCC_GUI(QMainWindow):
         self.get_settings()
         self.set_graph_options()
 
+    def remote_mode(self):
+        if not self.socket_comm.connected:
+            self.socket_comm.threaded_accept_connection()
+            remote_dialog = RemoteConnDialog(self.socket_comm, self)
+            remote_dialog.exec()
+
+            if not self.socket_comm.connected:
+                self.log.debug('Aborted remote connection')
+            else:
+                self.log.debug('Connected')
+                self.enter_remote_mode()
+
+        else:
+            # self.abort_remoteconnection()
+            self.exit_remote_mode()
+
+    def enter_remote_mode(self):
+        self.Client_label.setText(f"Connected to Client:\n{self.socket_comm.addr}")
+        self.RemoteModeButton.setText("EXIT\nREMOTE-mode")
+        self.RUNButton.setEnabled(False)
+        self.RECButton.setEnabled(False)
+        self.tabWidget.setTabEnabled(1, False)
+        self.tabWidget.setTabEnabled(0, False)
+        self.tabWidget.setCurrentIndex(2)
+        self.remote_message_timer = QTimer()
+        self.remote_message_timer.timeout.connect(self.check_and_parse_messages)
+        self.remote_message_timer.start(500)
+        self.is_remote_ctr = True
+        self.socket_comm._send(json.dumps({"type": "status", "status": "ready"}).encode())
+
+    def exit_remote_mode(self):
+        self.socket_comm.close_socket()
+        self.Client_label.setText("disconnected")
+        self.RemoteModeButton.setText("ENTER\nREMOTE-mode")
+        if self.remote_message_timer:
+            self.remote_message_timer.stop()
+            self.remote_message_timer = None
+        self.is_remote_ctr = False
+        self.RUNButton.setEnabled(True)
+        self.RECButton.setEnabled(True)
+        self.tabWidget.setTabEnabled(1, True)
+        self.tabWidget.setTabEnabled(0, True)
+
+    def check_and_parse_messages(self):
+        message = self.socket_comm.read_json_message_fast()
+        if message:
+            # parse message
+            if message['type'] == 'start_rec':
+                self.log.info("got message to start recording")
+                try:
+                    if message["setting_file"]:
+                        self.load_settings_fromfile(message["setting_file"])
+                        self.log.debug(f"loaded settings from {message['setting_file']}")
+                except (FileNotFoundError, KeyError):
+                    self.log.error("passed settings file not found")
+
+                self.settings.session_name = message["session_id"]
+                self.session_label.setText(self.settings.session_name)
+                self.remote_message_timer.setInterval(10000)  # increase the interval to 10s
+                self.record_daq()
+                response = {"type": "response", "status": "recording_ok"}
+                self.socket_comm._send(json.dumps(response).encode())
+
+            elif message['type'] == 'stop':
+                self.log.info("got message to stop")
+                self.stop_daq()
+                self.remote_message_timer.setInterval(500)
+                response = {"type": "response", "status": "stop_ok"}
+                self.socket_comm._send(json.dumps(response).encode())
+
+            elif message['type'] == 'status_poll':
+                if self.mcc_board.is_recording:
+                    response = {"type": "status", "status": "recording"}
+                elif self.mcc_board.is_viewing:
+                    response = {"type": "status", "status": "viewing"}
+                elif self.is_remote_ctr:
+                    response = {"type": "status", "status": "ready"}
+                else:
+                    response = {"type": "status", "status": "error"}
+                self.socket_comm._send(json.dumps(response).encode())
+
+            elif message['type'] == 'start_run':
+                self.log.info("got message to start viewing")
+                try:
+                    if message["setting_file"]:
+                        self.load_settings_fromfile(message["setting_file"])
+                except (FileNotFoundError, KeyError):
+                    self.log.error("passed settings file not found")
+
+                self.settings.session_name = message["session_id"]
+                self.session_label.setText(self.settings.session_name)
+                self.remote_message_timer.setInterval(10000) #increase the interval to 10s
+                self.run_daq()
+                response = {"type": "response", "status": "run_ok"}
+                self.socket_comm._send(json.dumps(response).encode())
+
+    def check_connection(self):
+        if self.socket_comm.connected:
+            self.remote_dialog.close()
+
+    def abort_remoteconnection(self):
+        self.socket_comm.stop_waiting_for_connection()
 
     def app_is_exiting(self):
         if self.mcc_board.is_recording or self.mcc_board.is_viewing:

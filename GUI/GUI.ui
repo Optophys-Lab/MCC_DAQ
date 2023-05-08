@@ -1800,8 +1800,8 @@ Skipped channels will still be recorded</string>
    <widget class="QLCDNumber" name="counterDisplay_1">
     <property name="geometry">
      <rect>
-      <x>720</x>
-      <y>40</y>
+      <x>950</x>
+      <y>20</y>
       <width>64</width>
       <height>23</height>
      </rect>
@@ -1825,8 +1825,8 @@ Skipped channels will still be recorded</string>
    <widget class="QLCDNumber" name="counterDisplay_2">
     <property name="geometry">
      <rect>
-      <x>810</x>
-      <y>40</y>
+      <x>1040</x>
+      <y>20</y>
       <width>64</width>
       <height>23</height>
      </rect>
@@ -1841,8 +1841,8 @@ Skipped channels will still be recorded</string>
    <widget class="QLabel" name="label_24">
     <property name="geometry">
      <rect>
-      <x>720</x>
-      <y>20</y>
+      <x>950</x>
+      <y>0</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -1860,8 +1860,8 @@ Skipped channels will still be recorded</string>
    <widget class="QLabel" name="label_25">
     <property name="geometry">
      <rect>
-      <x>810</x>
-      <y>20</y>
+      <x>1040</x>
+      <y>0</y>
       <width>71</width>
       <height>16</height>
      </rect>
@@ -1879,8 +1879,8 @@ Skipped channels will still be recorded</string>
    <widget class="QPushButton" name="StartSignalButton">
     <property name="geometry">
      <rect>
-      <x>930</x>
-      <y>30</y>
+      <x>850</x>
+      <y>20</y>
       <width>89</width>
       <height>25</height>
      </rect>
@@ -1892,14 +1892,69 @@ Skipped channels will still be recorded</string>
    <widget class="QPushButton" name="CounterScanButton">
     <property name="geometry">
      <rect>
-      <x>740</x>
-      <y>70</y>
+      <x>970</x>
+      <y>50</y>
       <width>111</width>
       <height>25</height>
      </rect>
     </property>
     <property name="text">
      <string>Scan counters</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="RemoteModeButton">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>690</x>
+      <y>10</y>
+      <width>121</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ENTER
+REMOTE-mode</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="Client_label">
+    <property name="geometry">
+     <rect>
+      <x>700</x>
+      <y>60</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>disconnected</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="session_label">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>60</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Session_id</string>
     </property>
    </widget>
   </widget>

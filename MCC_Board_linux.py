@@ -78,7 +78,7 @@ class MCCBoard:
         number_of_devices = len(self.devices)
         if number_of_devices == 0:
             self.log.error('No DAQ devices found')
-            raise RuntimeError('Error: No DAQ devices found')
+            #raise RuntimeError('Error: No DAQ devices found')
 
         self.log.debug(f'Found {number_of_devices} DAQ device(s)')
 

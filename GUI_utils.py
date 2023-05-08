@@ -4,8 +4,6 @@ import json
 import datetime
 from PyQt6 import QtWidgets, QtCore, QtGui
 
-
-
 COLOR_PALETTE = ['#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800', '#f14cc1', '#a3a3a3', '#ffc400',
                  '#00d7ff', '#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800']
 # 'bright' from seaborn
@@ -23,11 +21,13 @@ class TimeBases(Enum):
         obj._value_ = string
         obj.duration = int(string.split(" ")[0])
         return obj
+
     s20 = '20 s'
     s10 = '10 s'
     s5 = '5 s'
     s2 = '2 s'
     s1 = '1 s'
+
 
 @unique
 class YRanges(Enum):
@@ -37,6 +37,7 @@ class YRanges(Enum):
         obj.context = value
         obj._value_ = string
         return obj
+
     birange_10 = '+-10 V'
     birange_5 = '+-5 V'
     birange_3 = '+-3.3 V'
@@ -60,17 +61,20 @@ class PlotWindowEnum(IntEnum):
     K = 10
     L = 11
 
+
 class GraphSettings(QtWidgets.QWidget):
-    def __init__(self, nr_of_graphs = 4,idx =0, parent=None):
+    def __init__(self, nr_of_graphs=4, idx=0, parent=None):
         super().__init__(parent)
         self._nr_of_graphs = nr_of_graphs
         self.idx = idx  # indicating which viewer this belongs to
         self.layout = QtWidgets.QVBoxLayout(self)
         self.created_elements = []
         self.create_settings_widget()
+
     @property
     def nr_of_graphs(self):
         return self._nr_of_graphs
+
     @nr_of_graphs.setter
     def nr_of_graphs(self, value):
         if 0 <= value <= 4:
@@ -94,7 +98,7 @@ class GraphSettings(QtWidgets.QWidget):
 
     def adjust_current_widget(self):
         for idx in range(4):
-            if idx+1 > self._nr_of_graphs:
+            if idx + 1 > self._nr_of_graphs:
                 self.timebase_combo_list[idx].setEnabled(False)
                 self.yrange_combo_list[idx].setEnabled(False)
                 self.graph_name_list[idx].setEnabled(False)
@@ -107,13 +111,14 @@ class GraphSettings(QtWidgets.QWidget):
                 self.tb_list[idx].setEnabled(True)
                 self.yr_list[idx].setEnabled(True)
             self.graph_name_list[idx].setText(PlotWindowEnum(MAX_GRAPHS * self.idx + idx).name)
+
     def create_settings_widget(self):
-        #for _ in range(len(self.created_elements)):
+        # for _ in range(len(self.created_elements)):
         #    el = self.created_elements.pop()
         #    self.layout.removeWidget(el)
         #    #del el
 
-        #print(f'was called with {self._nr_of_graphs}')
+        # print(f'was called with {self._nr_of_graphs}')
         self.timebase_combo_list = []
         self.yrange_combo_list = []
         self.graph_name_list = []
@@ -125,42 +130,42 @@ class GraphSettings(QtWidgets.QWidget):
         for idx in range(4):
             graph_name = PlotWindowEnum(MAX_GRAPHS * self.idx + idx).name
             TimeBaseCombo = QtWidgets.QComboBox(parent=self)
-            TimeBaseCombo.setGeometry(QtCore.QRect(100, 20+distance_between_elements*idx, 86, 25))
+            TimeBaseCombo.setGeometry(QtCore.QRect(100, 20 + distance_between_elements * idx, 86, 25))
             TimeBaseCombo.setFont(font)
             TimeBaseCombo.setObjectName(f"TimeBaseCombo_{idx}")
             TimeBaseCombo.addItems([e.value for e in TimeBases])
             self.timebase_combo_list.append(TimeBaseCombo)
 
             YrangeCombo = QtWidgets.QComboBox(parent=self)
-            YrangeCombo.setGeometry(QtCore.QRect(100, 50+distance_between_elements*idx, 86, 25))
+            YrangeCombo.setGeometry(QtCore.QRect(100, 50 + distance_between_elements * idx, 86, 25))
             YrangeCombo.setFont(font)
             YrangeCombo.setObjectName(f"YrangeCombo_{idx}")
             YrangeCombo.addItems([e.value for e in YRanges])
             self.yrange_combo_list.append(YrangeCombo)
 
             GName = QtWidgets.QLabel(parent=self)
-            GName.setGeometry(QtCore.QRect(0, 0+distance_between_elements*idx, 91, 17))
+            GName.setGeometry(QtCore.QRect(0, 0 + distance_between_elements * idx, 91, 17))
             GName.setObjectName(f"GName_{idx}")
             GName.setText(graph_name)
             self.graph_name_list.append(GName)
 
             label_tb = QtWidgets.QLabel(parent=self)
-            label_tb.setGeometry(QtCore.QRect(10, 30+distance_between_elements*idx, 91, 17))
+            label_tb.setGeometry(QtCore.QRect(10, 30 + distance_between_elements * idx, 91, 17))
             label_tb.setFont(font)
             label_tb.setObjectName(f"label_tb_{idx}")
             label_tb.setText("time base")
             self.tb_list.append(label_tb)
-            #self.created_elements.append(label_tb)
-            #self.layout.addWidget(label_tb)
+            # self.created_elements.append(label_tb)
+            # self.layout.addWidget(label_tb)
 
             label_yr = QtWidgets.QLabel(parent=self)
-            label_yr.setGeometry(QtCore.QRect(10, 50+distance_between_elements*idx, 91, 17))
+            label_yr.setGeometry(QtCore.QRect(10, 50 + distance_between_elements * idx, 91, 17))
             label_yr.setFont(font)
             label_yr.setObjectName(f"label_yr_{idx}")
             label_yr.setText("Y Range")
             self.yr_list.append(label_yr)
-            #self.layout.addWidget(label_yr)
-            #self.created_elements.append(label_yr)
+            # self.layout.addWidget(label_yr)
+            # self.created_elements.append(label_yr)
 
 
 class MyBinaryFile_Reader:
@@ -199,6 +204,7 @@ class MyBinaryFile_Reader:
             self.data = np.reshape(data, (-1, self.num_channels))
             self.rec_duration = self.data.shape[0] / self.sampling_rate
 
+
 class MCC_settings:
     def __init__(self):
         self.scan_counters = False
@@ -225,7 +231,6 @@ class MCC_settings:
             if not channel["active"]:
                 ids_topop.append(c_id)
         dictionary.pop("graphsettings")
-        #TODO think if its actually better to keep all names in case more channels are recorded thn indicated !
         for c_id in sorted(ids_topop, reverse=True):
             dictionary['channel_list'].pop(c_id)
         return json.dumps(dictionary).encode()
@@ -268,7 +273,7 @@ class MCC_settings:
         with open(path2file, 'w') as fi:
             json.dump(dict_to_save, fi, indent=4)
 
-    def add_graphsettings(self, graphsetting :dict):
+    def add_graphsettings(self, graphsetting: dict):
         # # throw away old settings
         # if "A" in graphsetting.keys():
         #     for graph_name in [el.name for el in list(PlotWindowEnum)[1:5]]:
@@ -283,6 +288,48 @@ class MCC_settings:
         self.graphsettings.update({**graphsetting})
 
 
+class RemoteConnDialog(QtWidgets.QDialog):
+    """
+    Dialog to wait for remote connection, with abort button
+    """
+    def __init__(self, socket_comm, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.socket_comm = socket_comm
+        self.setWindowTitle('Remote Connection')
+        self.abort_button = QtWidgets.QPushButton("Abort")
+        self.abort_button.clicked.connect(self.stopwaiting)
+        self.label = QtWidgets.QLabel("waiting for remote connection...")
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.abort_button)
+        self.setLayout(layout)
+
+        self.connectio_time = QtCore.QTimer()
+        self.connectio_time.timeout.connect(self.check_connection)
+        self.connectio_time.start(500)
+        self.aborted = False
+
+    def check_connection(self):
+        """
+        Check if connection is established, if so close dialog, called regularly by timer
+        """
+        if self.socket_comm.connected:
+            self.close()
+
+    def stopwaiting(self):
+        """
+        Stop waiting for connection, called by abort button
+        """
+        self.socket_comm.stop_waiting_for_connection()
+        self.aborted = True
+        self.close()
+
+    def closeEvent(self, event):
+        # If the user closes the dialog, kill the process
+        self.stopwaiting()
+        self.aborted = True
+        event.accept()
 
 
 if __name__ == '__main__':
@@ -292,4 +339,4 @@ if __name__ == '__main__':
     print(vars(settings))
 
     # settings.default_setting()
-    #settings.to_file('MCC_settings_default.json')
+    # settings.to_file('MCC_settings_default.json')
