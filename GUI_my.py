@@ -576,8 +576,10 @@ class MCC_GUI(QMainWindow):
                                               "Recording still running. Abort ?",
                                               buttons=QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes)
             if message == QMessageBox.StandardButton.No:
+                event.ignore()
                 return
             elif message == QMessageBox.StandardButton.Abort:
+                event.ignore()
                 return
             elif message == QMessageBox.StandardButton.Yes:
                 self.log.info('not exiting')
