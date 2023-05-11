@@ -487,7 +487,7 @@ class MCC_GUI(QMainWindow):
         self.remote_message_timer.timeout.connect(self.check_and_parse_messages)
         self.remote_message_timer.start(500)
         self.is_remote_ctr = True
-        self.socket_comm._send(json.dumps({"type": "status", "status": "ready"}).encode())
+        self.socket_comm.send_json_message(SocketMessage.status_ready)
 
     def exit_remote_mode(self):
         self.socket_comm.close_socket()
