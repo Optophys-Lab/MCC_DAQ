@@ -33,7 +33,7 @@ from datetime import datetime
 
 from MCC_Board_linux import MCCBoard
 from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
-from socket_utils import SocketComm
+from socket_utils import SocketComm, MessageType, SocketMessage
 
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
@@ -487,7 +487,7 @@ class MCC_GUI(QMainWindow):
         self.remote_message_timer.timeout.connect(self.check_and_parse_messages)
         self.remote_message_timer.start(500)
         self.is_remote_ctr = True
-        self.socket_comm._send(json.dumps({"type": "status", "status": "ready"}).encode())
+        self.socket_comm.send_json_message(SocketMessage.status_ready)
 
     def exit_remote_mode(self):
         self.socket_comm.close_socket()
@@ -506,8 +506,13 @@ class MCC_GUI(QMainWindow):
         message = self.socket_comm.read_json_message_fast()
         if message:
             # parse message
-            if message['type'] == 'start_rec':
-                self.log.info("got message to start recording")
+            if message['type'] == MessageType.start_daq.value \
+                    or message['type'] == MessageType.start_daq_viewing.value:
+                if self.mcc_board.is_recording or self.mcc_board.is_viewing:  # got record but we already are !
+                    self.socket_comm.send_json_message(SocketMessage.status_error)
+                    self.log.info("got message to start, but something is already running!")
+                    return
+
                 try:
                     if message["setting_file"]:
                         self.load_settings_fromfile(message["setting_file"])
@@ -518,42 +523,52 @@ class MCC_GUI(QMainWindow):
                 self.settings.session_name = message["session_id"]
                 self.session_label.setText(self.settings.session_name)
                 self.remote_message_timer.setInterval(10000)  # increase the interval to 10s
-                self.record_daq()
-                response = {"type": "response", "status": "recording_ok"}
-                self.socket_comm._send(json.dumps(response).encode())
 
-            elif message['type'] == 'stop':
-                self.log.info("got message to stop")
-                self.stop_daq()
-                self.remote_message_timer.setInterval(500)
-                response = {"type": "response", "status": "stop_ok"}
-                self.socket_comm._send(json.dumps(response).encode())
+                if message['type'] == MessageType.start_daq.value:
+                    self.log.info("got message to start recording")
+                    self.record_daq()
+                    self.socket_comm.send_json_message(SocketMessage.respond_recording)
+                elif message['type'] == MessageType.start_daq_viewing.value:
+                    self.log.info("got message to start viewing")
+                    self.run_daq()
+                    self.socket_comm.send_json_message(SocketMessage.respond_viewing)
 
-            elif message['type'] == 'status_poll':
-                if self.mcc_board.is_recording:
-                    response = {"type": "status", "status": "recording"}
-                elif self.mcc_board.is_viewing:
-                    response = {"type": "status", "status": "viewing"}
-                elif self.is_remote_ctr:
-                    response = {"type": "status", "status": "ready"}
+            elif message['type'] == MessageType.stop_daq.value:
+                if not self.mcc_board.is_recording or not self.mcc_board.is_viewing:
+                    self.log.info("got message to stop")
+                    self.stop_daq()
+                    self.remote_message_timer.setInterval(500)
+                    self.socket_comm.send_json_message(SocketMessage.respond_stop)
                 else:
-                    response = {"type": "status", "status": "error"}
-                self.socket_comm._send(json.dumps(response).encode())
+                    self.log.info("got message to stop, but nothing is running")
+                    self.socket_comm.send_json_message(SocketMessage.status_error)
 
-            elif message['type'] == 'start_run':
-                self.log.info("got message to start viewing")
-                try:
-                    if message["setting_file"]:
-                        self.load_settings_fromfile(message["setting_file"])
-                except (FileNotFoundError, KeyError):
-                    self.log.error("passed settings file not found")
+            elif message['type'] == MessageType.start_daq_pulses.value:
+                if not self.mcc_board.is_pulsing:
+                    try:
+                        self.PulsesSpin.setValue(message['fps'])
+                    except KeyError:
+                        pass
+                    self.start_stop_pulses()
+                    self.socket_comm.send_json_message(SocketMessage.respond_pulsing)
+                else:
+                    self.log.info("got message to start pulsing, but already are!")
+                    self.socket_comm.send_json_message(SocketMessage.status_error)
 
-                self.settings.session_name = message["session_id"]
-                self.session_label.setText(self.settings.session_name)
-                self.remote_message_timer.setInterval(10000) #increase the interval to 10s
-                self.run_daq()
-                response = {"type": "response", "status": "run_ok"}
-                self.socket_comm._send(json.dumps(response).encode())
+            elif message['type'] == MessageType.stop_daq_pulses.value:
+                self.start_stop_pulses()
+                self.socket_comm.send_json_message(SocketMessage.respond_stop)
+
+            elif message['type'] == MessageType.poll_status.value:
+                if self.mcc_board.is_recording:
+                    self.socket_comm.send_json_message(SocketMessage.status_recording)
+                elif self.mcc_board.is_viewing:
+                    self.socket_comm.send_json_message(SocketMessage.status_viewing)
+                elif self.is_remote_ctr:
+                    self.socket_comm.send_json_message(SocketMessage.status_ready)
+                else:
+                    self.socket_comm.send_json_message(SocketMessage.status_error)
+
 
     def check_connection(self):
         if self.socket_comm.connected:

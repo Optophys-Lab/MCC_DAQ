@@ -6,19 +6,121 @@ import time
 import select
 import logging
 
-class StoppableThread(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
+from enum import Enum
 
-    def run(self):
-        while not self._stop_event.is_set():
-            print("Thread running...")
-            time.sleep(1)
-        print("Thread stopped.")
 
-    def stop(self):
-        self._stop_event.set()
+class MessageType(Enum):
+    start_daq = 'start_rec'
+    stop_daq = 'stop'
+    start_daq_pulses = 'start_pulses'
+    stop_daq_pulses = 'stop_pulses'
+    start_daq_viewing = 'start_viewing'
+    poll_status = 'status_poll'
+    start_video_rec = 'start_rec'
+    start_video_view = 'start_viewing'
+    stop_video = 'stop'
+    start_video_calibrec = 'start_calibrec'
+    status = 'status'
+    response = 'response'
+    disconnected = 'disconnected'
+
+class MessageStatus(Enum):
+    ready = 'ready'
+    error = 'error'
+    viewing = 'viewing'
+    recording = 'recording'
+    viewing_ok = 'viewing_ok'
+    recording_ok = 'recording_ok'
+    stop_ok = 'stop_ok'
+    pulsing_ok = 'pulsing_ok'
+    calib_ok = 'calib_ok'
+
+class SocketMessage:
+    status_error = {'type': MessageType.status.value, 'status': MessageStatus.error.value}
+    status_ready = {'type': MessageType.status.value, 'status': MessageStatus.ready.value}
+    status_recording = {'type': MessageType.status.value, 'status': MessageStatus.recording.value}
+    status_viewing = {'type': MessageType.status.value, 'status': MessageStatus.viewing.value}
+
+    respond_recording = {'type': MessageType.response.value, 'status': MessageStatus.recording_ok.value}
+    respond_viewing = {'type': MessageType.response.value, 'status': MessageStatus.viewing_ok.value}
+    respond_stop = {'type': MessageType.response.value, 'status': MessageStatus.stop_ok.value}
+    respond_pulsing = {'type': MessageType.response.value, 'status': MessageStatus.pulsing_ok.value}
+    respond_calib = {'type': MessageType.response.value, 'status': MessageStatus.calib_ok.value}
+    client_disconnected = {'type': MessageType.disconnected.value}
+
+    def __init__(self):
+        self._fps = 30
+        self._session_id = "test"
+        self._daq_setting_file = ''
+        self._basler_setting_file = ''
+        self.start_daq = {'type': MessageType.start_daq.value, 'session_id': self._session_id,
+                          'setting_file': self._daq_setting_file}
+        self.stop_daq = {'type': MessageType.stop_daq.value}
+        self.start_daq_pulses = {'type': MessageType.start_daq_pulses.value, 'fps': self._fps}
+        self.stop_daq_pulses = {'type': MessageType.stop_daq_pulses.value}
+        self.start_daq_viewing = {'type': MessageType.start_daq_viewing.value, 'session_id': self._session_id,
+                                  'setting_file': self._daq_setting_file}
+        self.poll_status = {'type': MessageType.poll_status.value}
+
+        self.start_video_rec = {'type': MessageType.start_video_rec.value, 'session_id': self._session_id,
+                                'setting_file': self._basler_setting_file, 'frame_rate': self._fps}
+        self.start_video_view = {'type': MessageType.start_video_view.value, 'session_id': self._session_id,
+                                 'setting_file': self._basler_setting_file, 'frame_rate': self._fps}
+        self.stop_video = {'type': MessageType.stop_video.value}
+
+        self.start_video_calibrec = {'type': MessageType.start_video_calibrec.value, 'session_id': 'calibration',
+                                     'setting_file': self._basler_setting_file, 'frame_rate': 5}
+
+
+
+
+    @property
+    def session_id(self):
+        return self._session_id
+
+    @session_id.setter
+    def session_id(self, value: str):
+        self._session_id = value
+        self.update_messages()
+
+    @property
+    def fps(self):
+        return self._fps
+
+    @fps.setter
+    def fps(self, value: float):
+        self._fps = value
+        self.update_messages()
+
+    @property
+    def daq_setting_file(self):
+        return self._daq_setting_file
+
+    @daq_setting_file.setter
+    def daq_setting_file(self, value: str):
+        self._daq_setting_file = value
+        self.update_messages()
+
+    @property
+    def basler_setting_file(self):
+        return self._basler_setting_file
+
+    @basler_setting_file.setter
+    def basler_setting_file(self, value: str):
+        self._basler_setting_file = value
+        self.update_messages()
+
+    def update_messages(self):
+        self.start_daq.update(**{'session_id': self.session_id, 'setting_file': self.daq_setting_file})
+        self.start_daq_viewing.update(**{'session_id': self._session_id,
+                                         'setting_file': self.daq_setting_file})
+        self.start_daq_pulses.update(**{'fps': self.fps})
+        self.start_video_rec.update(**{'session_id': self.session_id, 'setting_file': self.basler_setting_file,
+                                       'frame_rate': self.fps})
+        self.start_video_view.update(**{'session_id': self._session_id, 'setting_file': self.basler_setting_file,
+                                        'frame_rate': self.fps})
+        self.start_video_calibrec.update(**{'session_id': 'calibration', 'setting_file': self.basler_setting_file})
+
 
 class SocketComm:
     """
@@ -38,7 +140,7 @@ class SocketComm:
             self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         else:
             self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        #self.context.set_ciphers('DEFAULT')
+        # self.context.set_ciphers('DEFAULT')
         self.use_ssl = use_ssl
         # this doesnt work yet get some weird error from ssl module
         self.connected = False
@@ -83,7 +185,6 @@ class SocketComm:
         """
         Accepts connection in a separate thread, to not block the main thread
         """
-        #self.acception_thread = StoppableThread(target=self.accept_connection)
         self.stop_event.clear()
         self.acception_thread = threading.Thread(target=self.accept_connection)
         self.acception_thread.start()
@@ -100,14 +201,15 @@ class SocketComm:
         """
         if self.type == 'client':
             if self.use_ssl:
-                self.ssl_sock = self.context.wrap_socket(self._sock, server_hostname=self.host, do_handshake_on_connect=False)
+                self.ssl_sock = self.context.wrap_socket(self._sock, server_hostname=self.host,
+                                                         do_handshake_on_connect=False)
             else:
                 self.sock = self._sock
             self._connect(self.host, self.port)
             return True
         else:
             return False
-            #raise RuntimeError("Error: Cannot connect on server socket")
+            # raise RuntimeError("Error: Cannot connect on server socket")
 
     def close_socket(self):
         if self.use_ssl:
@@ -140,6 +242,11 @@ class SocketComm:
         except json.decoder.JSONDecodeError:
             message = None
         return message
+
+    def send_json_message(self, message: dict):
+        message = json.dumps(message).encode()
+        # message += b'\n'
+        self._send(message)
 
     def _connect(self, host, port):
         if self.use_ssl:
