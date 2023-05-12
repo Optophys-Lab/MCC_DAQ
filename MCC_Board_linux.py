@@ -751,7 +751,7 @@ class MCCBoard:
             counter_values.append(counter_value)
         return counter_values
 
-    def start_pulsing(self, freq: float = 30, duty_cycle: (float, None) = None, lag: int = 0):
+    def start_pulsing(self, freq: float = 30, duty_cycle: (float, None) = None, lag: float = 0):
         self.log.debug("Starting pulsing")
         pulse_width = 5  # ms
         if duty_cycle is None:
@@ -763,7 +763,7 @@ class MCCBoard:
             self.start_pulsing_windows(freq, duty_cycle, lag)
         self.is_pulsing = True
 
-    def start_pulsing_windows(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: int = 0):
+    def start_pulsing_windows(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: float = 0):
         ctr_info = self.daq_device.get_ctr_info()
 
         # Find a pulse timer channel on the board
@@ -780,7 +780,7 @@ class MCCBoard:
         self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
                       f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
 
-    def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: int = 0):
+    def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: float = 0):
 
         pulse_count = 0  # for continious operation
         initial_delay = lag

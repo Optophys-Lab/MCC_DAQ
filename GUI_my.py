@@ -265,7 +265,7 @@ class MCC_GUI(QMainWindow):
         for val, display in zip(counter_vals, [self.counterDisplay_1, self.counterDisplay_2]):
             display.display(val)
 
-    def start_stop_pulses(self, lag=0):
+    def start_stop_pulses(self, lag: float = 0):
         """
         calls mcc_board to start or stop pulsing with a chosen frequency
         """
