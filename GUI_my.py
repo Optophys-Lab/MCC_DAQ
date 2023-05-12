@@ -14,6 +14,7 @@ Features:
 
 maybe:
 - implement trigger mode ? wait for digital signal to start recording ?
+- disable remote mode if no device is connected ?
 """
 
 import json
@@ -40,11 +41,12 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.4.1"
+VERSION = "0.4.9"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
-HOST = "localhost" # if connecting to remote, use the IP of the current machine
+HOST = "localhost"  # if connecting to remote, use the IP of the current machine
 PORT = 8800
+ENABLE_REMOTE = False
 
 
 class MCC_GUI(QMainWindow):
@@ -72,8 +74,13 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabIcon(3, QtGui.QIcon("GUI/icons/Window.svg"))
         self.tabWidget.setTabIcon(4, QtGui.QIcon("GUI/icons/Window.svg"))
         self.settings = MCC_settings()
-        self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
-        self.socket_comm.create_socket()
+        if ENABLE_REMOTE:
+            self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
+        else:  # disable remote mode
+            self.socket_comm = None
+            self.RemoteModeButton.setEnabled(False)
+
+        # self.socket_comm.create_socket()
 
         # Dynamically Create ?
         self.channel_labels = [self.CH_0, self.CH_1, self.CH_2, self.CH_3, self.CH_4, self.CH_5, self.CH_6, self.CH_7,
@@ -258,13 +265,13 @@ class MCC_GUI(QMainWindow):
         for val, display in zip(counter_vals, [self.counterDisplay_1, self.counterDisplay_2]):
             display.display(val)
 
-    def start_stop_pulses(self):
+    def start_stop_pulses(self, lag=0):
         """
         calls mcc_board to start or stop pulsing with a chosen frequency
         """
         if not self.mcc_board.is_pulsing:
             # start pulsing
-            self.mcc_board.start_pulsing(self.PulsesSpin.value())
+            self.mcc_board.start_pulsing(self.PulsesSpin.value(), lag=lag)
             self.StartSignalButton.setText('Stop Pulsing')
         else:
             # stop pulsing
@@ -341,11 +348,11 @@ class MCC_GUI(QMainWindow):
     def get_settings(self):
         self.settings.channel_list = list()
         for ch_id, (ch_name, ch_rec, ch_win) in enumerate(zip(self.channel_names, self.channel_rec, self.channel_win)):
-            #if not ch_name.isEnabled():  # skip inactvated channels
+            # if not ch_name.isEnabled():  # skip inactvated channels
             #    continue
             # this lead to a bug where the channel list was not updated when a channel was disabled because whole tab
             # was disabled
-            #TODO find a better way to adjust number of channels!
+            # TODO find a better way to adjust number of channels!
             channel_dict = {}
             channel_dict['id'] = ch_id
             channel_dict['name'] = ch_name.text()
@@ -475,6 +482,9 @@ class MCC_GUI(QMainWindow):
             self.exit_remote_mode()
 
     def enter_remote_mode(self):
+        if not self.mcc_board.is_connected:
+            self.log.warning('No MCC board connected, wont enter remote mode')
+            return
         self.Client_label.setText(f"Connected to Client:\n{self.socket_comm.addr}")
         self.RemoteModeButton.setText("EXIT\nREMOTE-mode")
         self.RemoteModeButton.setIcon(QtGui.QIcon("GUI/icons/SignalSlash.svg"))
@@ -549,7 +559,7 @@ class MCC_GUI(QMainWindow):
                         self.PulsesSpin.setValue(message['fps'])
                     except KeyError:
                         pass
-                    self.start_stop_pulses()
+                    self.start_stop_pulses(lag=message['pulse_lag'])
                     self.socket_comm.send_json_message(SocketMessage.respond_pulsing)
                 else:
                     self.log.info("got message to start pulsing, but already are!")
@@ -569,6 +579,9 @@ class MCC_GUI(QMainWindow):
                 else:
                     self.socket_comm.send_json_message(SocketMessage.status_error)
 
+            elif message['type'] == MessageType.disconnected.value:
+                self.log.info("got message that client disconnected")
+                self.exit_remote_mode()
 
     def check_connection(self):
         if self.socket_comm.connected:
@@ -578,6 +591,8 @@ class MCC_GUI(QMainWindow):
         self.socket_comm.stop_waiting_for_connection()
 
     def app_is_exiting(self):
+        if self.socket_comm:
+            self.socket_comm.close_socket()
         if self.mcc_board.is_recording or self.mcc_board.is_viewing:
             self.mcc_board.stop_recording()
         if self.mcc_board.daq_device:

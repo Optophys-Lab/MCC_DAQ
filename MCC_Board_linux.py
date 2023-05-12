@@ -11,7 +11,6 @@ import datetime
 
 import numpy as np
 
-
 from GUI_utils import MCC_settings
 
 OS_TYPE = platform.system()
@@ -78,7 +77,7 @@ class MCCBoard:
         number_of_devices = len(self.devices)
         if number_of_devices == 0:
             self.log.error('No DAQ devices found')
-            #raise RuntimeError('Error: No DAQ devices found')
+            # raise RuntimeError('Error: No DAQ devices found')
 
         self.log.debug(f'Found {number_of_devices} DAQ device(s)')
 
@@ -752,18 +751,19 @@ class MCCBoard:
             counter_values.append(counter_value)
         return counter_values
 
-    def start_pulsing(self, freq: float = 30, duty_cycle: (float, None) = None):
+    def start_pulsing(self, freq: float = 30, duty_cycle: (float, None) = None, lag: int = 0):
         self.log.debug("Starting pulsing")
         pulse_width = 5  # ms
         if duty_cycle is None:
             duty_cycle = pulse_width / (1000 / freq)
 
         if OS_TYPE == 'Linux':
-            self.start_pulsing_linux(freq, duty_cycle)
+            self.start_pulsing_linux(freq, duty_cycle, lag)
         elif OS_TYPE == 'Windows':
-            self.start_pulsing_windows(freq, duty_cycle)
+            self.start_pulsing_windows(freq, duty_cycle, lag)
         self.is_pulsing = True
-    def start_pulsing_windows(self, freq: float = 30, duty_cycle: (float, None) = 0.15):
+
+    def start_pulsing_windows(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: int = 0):
         ctr_info = self.daq_device.get_ctr_info()
 
         # Find a pulse timer channel on the board
@@ -776,14 +776,14 @@ class MCCBoard:
 
         self.timer_number, = first_chan.channel_num
         actual_frequency, actual_duty_cycle, _ = ul.pulse_out_start(
-            self.board_num, self.timer_number, freq, duty_cycle)
+            self.board_num, self.timer_number, freq, duty_cycle, initial_delay=lag)
         self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
                       f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
 
-    def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15):
+    def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: int = 0):
 
         pulse_count = 0  # for continious operation
-        initial_delay = 0
+        initial_delay = lag
 
         tmr_device = self.daq_device.get_tmr_device()
         (actual_frequency,

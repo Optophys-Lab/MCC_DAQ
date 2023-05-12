@@ -53,10 +53,12 @@ class SocketMessage:
         self._session_id = "test"
         self._daq_setting_file = ''
         self._basler_setting_file = ''
+        self._pulse_lag = 0
         self.start_daq = {'type': MessageType.start_daq.value, 'session_id': self._session_id,
                           'setting_file': self._daq_setting_file}
         self.stop_daq = {'type': MessageType.stop_daq.value}
-        self.start_daq_pulses = {'type': MessageType.start_daq_pulses.value, 'fps': self._fps}
+        self.start_daq_pulses = {'type': MessageType.start_daq_pulses.value, 'fps': self._fps,
+                                 'pulse_lag': self._pulse_lag}
         self.stop_daq_pulses = {'type': MessageType.stop_daq_pulses.value}
         self.start_daq_viewing = {'type': MessageType.start_daq_viewing.value, 'session_id': self._session_id,
                                   'setting_file': self._daq_setting_file}
@@ -71,8 +73,14 @@ class SocketMessage:
         self.start_video_calibrec = {'type': MessageType.start_video_calibrec.value, 'session_id': 'calibration',
                                      'setting_file': self._basler_setting_file, 'frame_rate': 5}
 
+    @property
+    def pulse_lag(self):
+        return self._pulse_lag
 
-
+    @pulse_lag.setter
+    def pulse_lag(self, value: str):
+        self._pulse_lag = value
+        self.update_messages()
 
     @property
     def session_id(self):
@@ -114,7 +122,7 @@ class SocketMessage:
         self.start_daq.update(**{'session_id': self.session_id, 'setting_file': self.daq_setting_file})
         self.start_daq_viewing.update(**{'session_id': self._session_id,
                                          'setting_file': self.daq_setting_file})
-        self.start_daq_pulses.update(**{'fps': self.fps})
+        self.start_daq_pulses.update(**{'fps': self.fps, 'pulse_lag': self.pulse_lag})
         self.start_video_rec.update(**{'session_id': self.session_id, 'setting_file': self.basler_setting_file,
                                        'frame_rate': self.fps})
         self.start_video_view.update(**{'session_id': self._session_id, 'setting_file': self.basler_setting_file,
@@ -147,6 +155,7 @@ class SocketComm:
         self.stop_event = threading.Event()
         self.log = logging.getLogger(f"SocketComm_{self.type}")
         self.log.setLevel(logging.DEBUG)
+        self.message_time = time.monotonic()
 
     def create_socket(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -159,8 +168,11 @@ class SocketComm:
                 self._ssl_sock = self.context.wrap_socket(self._sock, server_side=True, do_handshake_on_connect=False)
 
     def accept_connection(self):
+        self.create_socket()
         while not self.stop_event.is_set():
-            self.log.debug('waiting for connection...')
+            if time.monotonic() - self.message_time > 5:
+                self.message_time = time.monotonic()
+                self.log.debug('waiting for connection...')
             if self.use_ssl:
                 ready, _, _ = select.select([self._ssl_sock], [], [], 0.1)
                 if ready:
@@ -206,6 +218,7 @@ class SocketComm:
             else:
                 self.sock = self._sock
             self._connect(self.host, self.port)
+            self.connected = True
             return True
         else:
             return False
@@ -235,6 +248,8 @@ class SocketComm:
     def read_json_message_fast(self) -> dict:
         try:
             message = self._recv(1024)
+            if message == -1:
+                return SocketMessage.client_disconnected
             if message is not None:
                 message = json.loads(message.decode())
             else:
@@ -263,7 +278,7 @@ class SocketComm:
         except ConnectionResetError:
             self.log.error("Connection reset by peer")
 
-    def _recv(self, size) -> bytes:
+    def _recv(self, size) -> (bytes, int):
         try:
             if self.use_ssl:
                 return self.ssl_sock.recv(size)
@@ -271,6 +286,9 @@ class SocketComm:
                 return self.sock.recv(size)
         except socket.timeout:
             return None
+        except ConnectionResetError:
+            self.log.warning("Client disconnected")
+            return -1
 
     def _recv_until(self, delimiter) -> bytes:
         data = b''
