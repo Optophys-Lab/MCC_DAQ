@@ -41,7 +41,7 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.4.9"
+VERSION = "0.4.91"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
 HOST = "localhost"  # if connecting to remote, use the IP of the current machine
@@ -289,7 +289,10 @@ class MCC_GUI(QMainWindow):
         self.plotting_indexing_vec = list()
 
         for idx, win_id in enumerate(plotting_indx):
-            self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
+            try:
+                self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
+            except AttributeError: # no graphs here
+                continue
             index_vec = []
             for ch_id, channel in enumerate(self.settings.channel_list):
                 if channel['win'] == win_id and channel['active']:
