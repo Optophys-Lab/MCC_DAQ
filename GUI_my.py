@@ -20,6 +20,7 @@ maybe:
 import json
 import logging
 import queue
+import shutil
 import sys
 import numpy as np
 from queue import Queue, Empty
@@ -41,17 +42,19 @@ log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.4.91"
+VERSION = "0.5.0"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
 HOST = "localhost"  # if connecting to remote, use the IP of the current machine
 PORT = 8800
-ENABLE_REMOTE = False
-
+ENABLE_REMOTE = True
+DAQ_FOLDER = 'DAQ'
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.session_path = None
+        self.files_copied = False
         self.is_remote_ctr = False
         self.counter_timer = None
         self.rec_timer = None
@@ -125,7 +128,7 @@ class MCC_GUI(QMainWindow):
         # self.tabWidget.setTabVisible(1, False)
 
         self.scan_devices()
-
+        self.load_settings_fromfile('MCC_settings_default.json')
     ### DAQ Board interaction
     def scan_devices(self):
         """
@@ -203,6 +206,7 @@ class MCC_GUI(QMainWindow):
         calls the MCCBoard class to start recording the chosen data
         """
         self.get_settings()
+        self.files_copied = False
         self.mcc_board.reset_counters()
         self.mcc_board.start_recording(self.settings)
 
@@ -585,6 +589,28 @@ class MCC_GUI(QMainWindow):
             elif message['type'] == MessageType.disconnected.value:
                 self.log.info("got message that client disconnected")
                 self.exit_remote_mode()
+
+            elif message['type'] == MessageType.copy_files.value:
+                self.log.debug('got message to copy files')
+                self.session_path = message['session_path']
+                if self.session_path:
+                    self.copy_recorded_file()
+
+            elif message['type'] == MessageType.purge_files.value:
+                self.log.debug('got message to purge files')
+                self.purge_recorded_file()
+
+    def purge_recorded_file(self):
+        #TODO add a check that this is the current file ?
+        self.log.info(f"Deleting file {self.mcc_board.file_name}")
+        Path(self.mcc_board.file_name).unlink()
+
+    def copy_recorded_file(self):
+        self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER }")
+        if not self.mcc_board.is_recording and not self.files_copied:
+            shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER / self.mcc_board.file_name.name)
+            self.files_copied = True
+            self.socket_comm.send_json_message(SocketMessage.respond_copy)
 
     def check_connection(self):
         if self.socket_comm.connected:

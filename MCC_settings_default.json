@@ -1,6 +1,6 @@
 {
     "scan_counters": false,
-    "num_channels": 6,
+    "num_channels": 12,
     "channel_list": [
         {
             "id": 0,
@@ -40,8 +40,8 @@
         {
             "id": 5,
             "name": "Channel_5",
-            "active": true,
-            "win": 5,
+            "active": false,
+            "win": -1,
             "color": "#9f4800"
         },
         {
@@ -61,29 +61,29 @@
         {
             "id": 8,
             "name": "Channel_8",
-            "active": false,
-            "win": -1,
+            "active": true,
+            "win": 1,
             "color": "#ffc400"
         },
         {
             "id": 9,
             "name": "Channel_9",
-            "active": false,
-            "win": -1,
+            "active": true,
+            "win": 1,
             "color": "#00d7ff"
         },
         {
             "id": 10,
             "name": "Channel_10",
-            "active": false,
-            "win": -1,
+            "active": true,
+            "win": 2,
             "color": "#023eff"
         },
         {
             "id": 11,
             "name": "Channel_11",
-            "active": false,
-            "win": -1,
+            "active": true,
+            "win": 3,
             "color": "#ff7c00"
         },
         {
@@ -121,11 +121,11 @@
     "graphsettings": {
         "A": {
             "Yrange": "+-10 V",
-            "time_base": "10 s"
+            "time_base": "2 s"
         },
         "B": {
             "Yrange": "+-10 V",
-            "time_base": "5 s"
+            "time_base": "2 s"
         },
         "C": {
             "Yrange": "+-10 V",
@@ -133,39 +133,7 @@
         },
         "D": {
             "Yrange": "+-10 V",
-            "time_base": "1 s"
-        },
-        "E": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "F": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "G": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "H": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "J": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "I": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "K": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "L": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
+            "time_base": "2 s"
         }
     }
 }

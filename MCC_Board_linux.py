@@ -352,12 +352,12 @@ class MCCBoard:
                     # Wait a short amount of time for more data to be acquired.
                     time.sleep(0.0001)
 
-                t += (time.monotonic() - t0)
-                loop_counter += 1
-                if loop_counter == 100:
-                    loop_counter = 0
-                    self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
-                    t = 0
+                # t += (time.monotonic() - t0)
+                # loop_counter += 1
+                # if loop_counter == 100:
+                #     loop_counter = 0
+                #     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+                #     t = 0
         # free buffer before exiting the Thread
         ul.win_buf_free(self.memhandle)
         self.memhandle = None
@@ -519,12 +519,12 @@ class MCCBoard:
                     # acquired.
                     time.sleep(0.0001)
 
-                t += (time.monotonic() - t0)
-                loop_counter += 1
-                if loop_counter == 100:
-                    loop_counter = 0
-                    self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
-                    t = 0
+                # t += (time.monotonic() - t0)
+                # loop_counter += 1
+                # if loop_counter == 100:
+                #     loop_counter = 0
+                #     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+                #     t = 0
 
         # free buffer before exiting the Thread
         self.memhandle = None
