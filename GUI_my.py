@@ -608,7 +608,11 @@ class MCC_GUI(QMainWindow):
     def copy_recorded_file(self):
         self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER }")
         if not self.mcc_board.is_recording and not self.files_copied:
-            shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER / self.mcc_board.file_name.name)
+            if "MusterMaus" in self.settings.session_name:
+                shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / self.mcc_board.file_name.name)
+            else:
+                shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER /
+                                self.mcc_board.file_name.name)
             self.files_copied = True
             self.socket_comm.send_json_message(SocketMessage.respond_copy)
 
