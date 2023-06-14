@@ -4,37 +4,37 @@
     "channel_list": [
         {
             "id": 0,
-            "name": "Channel_0",
+            "name": "NP_R",
             "active": true,
             "win": 0,
             "color": "#023eff"
         },
         {
             "id": 1,
-            "name": "Channel_1",
+            "name": "NP_C",
             "active": true,
             "win": 0,
             "color": "#ff7c00"
         },
         {
             "id": 2,
-            "name": "Channel_2",
+            "name": "Lick_spout",
             "active": true,
-            "win": 1,
+            "win": 2,
             "color": "#1ac938"
         },
         {
             "id": 3,
-            "name": "Channel_3",
+            "name": "IR_beams",
             "active": true,
-            "win": 2,
+            "win": 1,
             "color": "#e8000b"
         },
         {
             "id": 4,
-            "name": "Channel_4",
+            "name": "Cam_Trig",
             "active": true,
-            "win": 3,
+            "win": 1,
             "color": "#8b2be2"
         },
         {
@@ -60,21 +60,21 @@
         },
         {
             "id": 8,
-            "name": "Channel_8",
+            "name": "NP_L",
             "active": true,
-            "win": 1,
+            "win": 0,
             "color": "#ffc400"
         },
         {
             "id": 9,
-            "name": "Channel_9",
+            "name": "Reward_pump",
             "active": true,
-            "win": 1,
+            "win": 2,
             "color": "#00d7ff"
         },
         {
             "id": 10,
-            "name": "Channel_10",
+            "name": "Trial_Sync",
             "active": true,
             "win": 2,
             "color": "#023eff"
@@ -83,7 +83,7 @@
             "id": 11,
             "name": "Channel_11",
             "active": true,
-            "win": 3,
+            "win": -1,
             "color": "#ff7c00"
         },
         {
@@ -117,23 +117,36 @@
     ],
     "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
+    "pulse_rate": 31,
     "sampling_rate": 1000,
     "graphsettings": {
         "A": {
-            "Yrange": "+-10 V",
-            "time_base": "2 s"
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
         },
         "B": {
-            "Yrange": "+-10 V",
-            "time_base": "2 s"
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
         },
         "C": {
-            "Yrange": "+-10 V",
-            "time_base": "2 s"
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
         },
-        "D": {
+        "J": {
             "Yrange": "+-10 V",
-            "time_base": "2 s"
+            "time_base": "20 s"
+        },
+        "I": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "K": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "L": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
         }
     }
 }

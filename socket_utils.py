@@ -33,10 +33,12 @@ class MessageStatus(Enum):
     recording = 'recording'
     viewing_ok = 'viewing_ok'
     recording_ok = 'recording_ok'
+    recording_fail = 'recording_fail'
     stop_ok = 'stop_ok'
     pulsing_ok = 'pulsing_ok'
     calib_ok = 'calib_ok'
     copy_ok = 'copy_ok'
+    copy_fail = 'copy_fail'
 
 class SocketMessage:
     status_error = {'type': MessageType.status.value, 'status': MessageStatus.error.value}
@@ -45,11 +47,13 @@ class SocketMessage:
     status_viewing = {'type': MessageType.status.value, 'status': MessageStatus.viewing.value}
 
     respond_recording = {'type': MessageType.response.value, 'status': MessageStatus.recording_ok.value}
+    respond_recording_fail = {'type': MessageType.response.value, 'status': MessageStatus.recording_fail.value}
     respond_viewing = {'type': MessageType.response.value, 'status': MessageStatus.viewing_ok.value}
     respond_stop = {'type': MessageType.response.value, 'status': MessageStatus.stop_ok.value}
     respond_pulsing = {'type': MessageType.response.value, 'status': MessageStatus.pulsing_ok.value}
     respond_calib = {'type': MessageType.response.value, 'status': MessageStatus.calib_ok.value}
     respond_copy = {'type': MessageType.response.value, 'status': MessageStatus.copy_ok.value}
+    respond_copy_fail = {'type': MessageType.response.value, 'status': MessageStatus.copy_fail.value}
     client_disconnected = {'type': MessageType.disconnected.value}
 
     def __init__(self):
@@ -280,11 +284,25 @@ class SocketComm:
                 return message
         except json.decoder.JSONDecodeError:
             message = None
+            print('message decoding failed')
+        return message
+
+    def read_json_message_fast_linebreak(self) -> dict:
+        try:
+            message = self._recv_until(b'\n')
+            if message == -1:
+                return SocketMessage.client_disconnected
+            if message is not None:
+                message = json.loads(message.decode())
+        except json.decoder.JSONDecodeError:
+            message = None
+            print('message decoding failed')
         return message
 
     def send_json_message(self, message: dict):
         message = json.dumps(message).encode()
-        # message += b'\n'
+        self.log.info(f"Sending message {message}")
+        message += b'\n'
         self._send(message)
 
     def _connect(self, host, port):
@@ -325,6 +343,9 @@ class SocketComm:
                     data += self.sock.recv(1)
         except socket.timeout:
             data = None
+        except ConnectionResetError:
+            self.log.warning("Client disconnected")
+            data = -1
         return data
 
     def _recv_all(self):

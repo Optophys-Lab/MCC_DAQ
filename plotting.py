@@ -11,9 +11,10 @@ from GUI_utils import MCC_settings, PlotWindowEnum, TimeBases, YRanges, MAX_GRAP
 
 history_dur = 10
 
+
 # Analog_plot ------------------------------------------------------
 class MultiplotWidget(QWidget):
-    def __init__(self, parent=None, nr_plots = 3, idx = 0):
+    def __init__(self, parent=None, nr_plots=3, idx=0):
         super().__init__(parent)
         self._nr_plots = nr_plots
         self.layout = QVBoxLayout(self)
@@ -23,16 +24,17 @@ class MultiplotWidget(QWidget):
     @property
     def nr_plots(self) -> int:
         return self._nr_plots
+
     @nr_plots.setter
-    def nr_plots(self,value:int):
-        if 0 <= value <=MAX_GRAPHS:
+    def nr_plots(self, value: int):
+        if 0 <= value <= MAX_GRAPHS:
             self._nr_plots = value
         else:
             self._nr_plots = MAX_GRAPHS
         self.adjust_current_widget()
 
     def adjust_current_widget(self):
-        for plot in  self.list_of_plots:
+        for plot in self.list_of_plots:
             self.layout.removeWidget(plot)
         self.list_of_plots = []
         for idx in range(self.nr_plots):
@@ -44,6 +46,7 @@ class MultiplotWidget(QWidget):
             self.layout.addWidget(label)
             self.list_of_plots.append(label)
 
+
 class Analog_plot(QWidget):
 
     def __init__(self, parent=None):
@@ -51,11 +54,10 @@ class Analog_plot(QWidget):
 
         # Create axis
         self.axis = pg.PlotWidget(title=f"Analog Plot", labels={'left': 'Volts'})
-        self.legend = self.axis.addLegend(offset=(10, 10), labelTextSize = '10pt')
+        self.legend = self.axis.addLegend(offset=(10, 10), labelTextSize='10pt')
 
-        #self.plot_1 = self.axis.plot(pen=pg.mkPen('g'), name='analog 1')
-        #self.plot_2 = self.axis.plot(pen=pg.mkPen('r'), name='analog 2')
-
+        # self.plot_1 = self.axis.plot(pen=pg.mkPen('g'), name='analog 1')
+        # self.plot_2 = self.axis.plot(pen=pg.mkPen('r'), name='analog 2')
 
         # Create controls
         self.demean_checkbox = QCheckBox('De-mean plotted signals')
@@ -98,28 +100,27 @@ class Analog_plot(QWidget):
 
         self.axis.clear()
         self.axis.setTitle(f"Analog {PlotWindowEnum(win_id).name}")
-        self.ADCs = [Signal_history(history_length) for _ in range(nr_lines)] #* nr_lines
+        self.ADCs = [Signal_history(history_length) for _ in range(nr_lines)]  # * nr_lines
         self.plot_lines = list()
         for name, c in zip(names, colors):
             self.plot_lines.append(self.axis.plot(pen=pg.mkPen(c), name=name))
         self.x = np.linspace(-dur, 0, history_length)  # X axis for timeseries plots.
         try:
-            #yrange = int(re.findall(r'\d', "settings.voltage_range")[0])
+            # yrange = int(re.findall(r'\d', "settings.voltage_range")[0])
             yrange = YRanges(settings.graphsettings[PlotWindowEnum(win_id).name]["Yrange"]).name
             val = int(yrange.split("_")[1])
 
             if 'birange' in yrange:
-                yrange_min = -val
-                yrange_max = val
+                yrange_min = -val - 0.1
+                yrange_max = val + 0.1
             else:
-                yrange_min = 0
-                yrange_max = val
+                yrange_min = 0 - 0.1
+                yrange_max = val + 0.1
 
 
         except:
             yrange_min = -10
             yrange_max = 10
-
 
         self.axis.setYRange(yrange_min, yrange_max, padding=0)
         self.axis.setXRange(-dur, dur * 0.02, padding=0)
@@ -132,7 +133,7 @@ class Analog_plot(QWidget):
             # Plot signals with mean removed.
             for ADC, plot in zip(self.ADCs, self.plot_lines):
                 y = ADC.history - np.mean(ADC.history) \
-                     + self.offset_spinbox.value() / 1000
+                    + self.offset_spinbox.value() / 1000
                 plot.setData(self.x, y)
         else:
             for ADC, plot in zip(self.ADCs, self.plot_lines):
@@ -190,6 +191,7 @@ class Digital_plot():
         self.plot_1.setData(self.x, self.DI1.history)
         self.plot_2.setData(self.x, self.DI2.history)
 
+
 #
 # # Event triggered plot -------------------------------------------------
 #
@@ -242,7 +244,6 @@ class Signal_history():
         data_len = len(new_data)
         self.history = np.roll(self.history, -data_len)
         self.history[-data_len:] = new_data
-
 
 # Record_clock ----------------------------------------------------
 #

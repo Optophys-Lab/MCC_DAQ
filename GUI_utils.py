@@ -212,6 +212,7 @@ class MCC_settings:
         self.channel_list = []
         self.device = None
         self.voltage_range = None
+        self.pulse_rate = 30
         self.sampling_rate = 1000
         self.graphsettings = {}
         default_params_file = 'MCC_settings_default.json'

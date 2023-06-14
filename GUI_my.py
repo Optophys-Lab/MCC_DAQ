@@ -383,6 +383,7 @@ class MCC_GUI(QMainWindow):
         self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
 
         self.settings.scan_counters = self.Counters_checkBox.isChecked()
+        self.settings.pulse_rate = self.PulsesSpin.value()
 
     def set_settings(self):
         voltage_set = [idx for idx, r in enumerate(self.mcc_board.ai_ranges) if r == self.settings.voltage_range]
@@ -407,7 +408,8 @@ class MCC_GUI(QMainWindow):
         self.set_nr_graths()
 
         self.Counters_checkBox.setChecked(self.settings.scan_counters)
-
+        self.PulsesSpin.setValue(self.settings.pulse_rate)
+        #self.settings.
     def set_graph_options(self):
         for ele in self.channel_win:
             curr_element = ele.currentText()
@@ -520,9 +522,10 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabEnabled(0, True)
 
     def check_and_parse_messages(self):
-        message = self.socket_comm.read_json_message_fast()
+        message = self.socket_comm.read_json_message_fast_linebreak()
         if message:
             # parse message
+            print(message)
             if message['type'] == MessageType.start_daq.value \
                     or message['type'] == MessageType.start_daq_viewing.value:
                 if self.mcc_board.is_recording or self.mcc_board.is_viewing:  # got record but we already are !
@@ -539,7 +542,7 @@ class MCC_GUI(QMainWindow):
 
                 self.settings.session_name = message["session_id"]
                 self.session_label.setText(self.settings.session_name)
-                self.remote_message_timer.setInterval(10000)  # increase the interval to 10s
+                self.remote_message_timer.setInterval(5000)  # increase the interval to 10s
 
                 if message['type'] == MessageType.start_daq.value:
                     self.log.info("got message to start recording")
@@ -603,16 +606,23 @@ class MCC_GUI(QMainWindow):
     def purge_recorded_file(self):
         #TODO add a check that this is the current file ?
         self.log.info(f"Deleting file {self.mcc_board.file_name}")
-        Path(self.mcc_board.file_name).unlink()
+        try:
+            Path(self.mcc_board.file_name).unlink()
+        except FileNotFoundError:
+            self.log.warning(f"File {self.mcc_board.file_name} doesnt not exist")
 
     def copy_recorded_file(self):
         self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER }")
         if not self.mcc_board.is_recording and not self.files_copied:
-            if "MusterMaus" in self.settings.session_name:
-                shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / self.mcc_board.file_name.name)
-            else:
-                shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER /
-                                self.mcc_board.file_name.name)
+            try:
+                if "MusterMaus" in self.settings.session_name:
+                    shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / self.mcc_board.file_name.name)
+                else:
+                    shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER /
+                                    self.mcc_board.file_name.name)
+            except (FileNotFoundError, IOError):
+                self.socket_comm.send_json_message(SocketMessage.respond_copy_fail)
+                return
             self.files_copied = True
             self.socket_comm.send_json_message(SocketMessage.respond_copy)
 
