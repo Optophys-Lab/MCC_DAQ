@@ -181,6 +181,7 @@ class MyBinaryFile_Reader:
         self.data = None
         self.header = None
         self.read_file()
+        self.make_fields_toproperties()
 
     def process_header(self):
         self.num_channels = self.header['num_channels']
@@ -203,6 +204,11 @@ class MyBinaryFile_Reader:
                 data = data[:-len_remainder]
             self.data = np.reshape(data, (-1, self.num_channels))
             self.rec_duration = self.data.shape[0] / self.sampling_rate
+
+    def make_fields_toproperties(self):
+        '''this adds the channel names as fields to the class'''
+        for idx, channel_name in enumerate(self.channel_names):
+            self.__dict__[channel_name] = self.data[:, idx]
 
 
 class MCC_settings:

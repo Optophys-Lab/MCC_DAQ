@@ -39,23 +39,23 @@
         },
         {
             "id": 5,
-            "name": "Channel_5",
-            "active": false,
-            "win": -1,
+            "name": "Angle_R",
+            "active": true,
+            "win": 4,
             "color": "#9f4800"
         },
         {
             "id": 6,
-            "name": "Channel_6",
-            "active": false,
-            "win": -1,
+            "name": "Angle_L",
+            "active": true,
+            "win": 5,
             "color": "#f14cc1"
         },
         {
             "id": 7,
-            "name": "Channel_7",
-            "active": false,
-            "win": -1,
+            "name": "Barcodes",
+            "active": true,
+            "win": 8,
             "color": "#a3a3a3"
         },
         {
@@ -117,7 +117,7 @@
     ],
     "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
-    "pulse_rate": 31,
+    "pulse_rate": 10,
     "sampling_rate": 1000,
     "graphsettings": {
         "A": {
@@ -131,6 +131,14 @@
         "C": {
             "Yrange": "0-5 V",
             "time_base": "5 s"
+        },
+        "E": {
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
+        },
+        "F": {
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
         },
         "J": {
             "Yrange": "+-10 V",
