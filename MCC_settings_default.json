@@ -1,6 +1,6 @@
 {
     "scan_counters": false,
-    "num_channels": 12,
+    "num_channels": 14,
     "channel_list": [
         {
             "id": 0,
@@ -89,15 +89,15 @@
         {
             "id": 12,
             "name": "Channel_12",
-            "active": false,
+            "active": true,
             "win": -1,
             "color": "#1ac938"
         },
         {
             "id": 13,
-            "name": "Channel_13",
-            "active": false,
-            "win": -1,
+            "name": "GateL",
+            "active": true,
+            "win": 8,
             "color": "#e8000b"
         },
         {
@@ -118,7 +118,7 @@
     "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
     "pulse_rate": 10,
-    "sampling_rate": 1000,
+    "sampling_rate": 2000,
     "graphsettings": {
         "A": {
             "Yrange": "0-5 V",
@@ -141,7 +141,7 @@
             "time_base": "1 s"
         },
         "J": {
-            "Yrange": "+-10 V",
+            "Yrange": "0-5 V",
             "time_base": "20 s"
         },
         "I": {
