@@ -37,6 +37,8 @@ from MCC_Board_linux import MCCBoard
 from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
 from socket_utils import SocketComm, MessageType, SocketMessage
 
+#from datastructure_tools.DataJoint.schemas.beh_flex import NAME_OF_BEHBLOCK
+# TODO fix this import !
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
 
@@ -48,7 +50,7 @@ COUNTER_UPDATE_TIME = 1000  # ms
 HOST = "localhost"  # if connecting to remote, use the IP of the current machine
 PORT = 8800
 ENABLE_REMOTE = True
-DAQ_FOLDER = 'DAQ'
+DAQ_FOLDER = 'daq'
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
