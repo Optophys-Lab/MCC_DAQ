@@ -20,6 +20,7 @@ maybe:
 import json
 import logging
 import queue
+import shutil
 import sys
 import numpy as np
 from queue import Queue, Empty
@@ -36,22 +37,26 @@ from MCC_Board_linux import MCCBoard
 from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
 from socket_utils import SocketComm, MessageType, SocketMessage
 
+#from datastructure_tools.DataJoint.schemas.beh_flex import NAME_OF_BEHBLOCK
+# TODO fix this import !
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.4.9"
+VERSION = "0.5.0"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
 HOST = "localhost"  # if connecting to remote, use the IP of the current machine
 PORT = 8800
-ENABLE_REMOTE = False
-
+ENABLE_REMOTE = True
+DAQ_FOLDER = 'daq'
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.session_path = None
+        self.files_copied = False
         self.is_remote_ctr = False
         self.counter_timer = None
         self.rec_timer = None
@@ -125,7 +130,7 @@ class MCC_GUI(QMainWindow):
         # self.tabWidget.setTabVisible(1, False)
 
         self.scan_devices()
-
+        self.load_settings_fromfile('MCC_settings_default.json')
     ### DAQ Board interaction
     def scan_devices(self):
         """
@@ -203,6 +208,7 @@ class MCC_GUI(QMainWindow):
         calls the MCCBoard class to start recording the chosen data
         """
         self.get_settings()
+        self.files_copied = False
         self.mcc_board.reset_counters()
         self.mcc_board.start_recording(self.settings)
 
@@ -289,7 +295,10 @@ class MCC_GUI(QMainWindow):
         self.plotting_indexing_vec = list()
 
         for idx, win_id in enumerate(plotting_indx):
-            self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
+            try:
+                self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
+            except AttributeError: # no graphs here
+                continue
             index_vec = []
             for ch_id, channel in enumerate(self.settings.channel_list):
                 if channel['win'] == win_id and channel['active']:
@@ -376,6 +385,7 @@ class MCC_GUI(QMainWindow):
         self.settings.add_graphsettings(self.Graph_setting_3.get_current_settings())
 
         self.settings.scan_counters = self.Counters_checkBox.isChecked()
+        self.settings.pulse_rate = self.PulsesSpin.value()
 
     def set_settings(self):
         voltage_set = [idx for idx, r in enumerate(self.mcc_board.ai_ranges) if r == self.settings.voltage_range]
@@ -400,7 +410,8 @@ class MCC_GUI(QMainWindow):
         self.set_nr_graths()
 
         self.Counters_checkBox.setChecked(self.settings.scan_counters)
-
+        self.PulsesSpin.setValue(self.settings.pulse_rate)
+        #self.settings.
     def set_graph_options(self):
         for ele in self.channel_win:
             curr_element = ele.currentText()
@@ -513,9 +524,10 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabEnabled(0, True)
 
     def check_and_parse_messages(self):
-        message = self.socket_comm.read_json_message_fast()
+        message = self.socket_comm.read_json_message_fast_linebreak()
         if message:
             # parse message
+            print(message)
             if message['type'] == MessageType.start_daq.value \
                     or message['type'] == MessageType.start_daq_viewing.value:
                 if self.mcc_board.is_recording or self.mcc_board.is_viewing:  # got record but we already are !
@@ -532,7 +544,7 @@ class MCC_GUI(QMainWindow):
 
                 self.settings.session_name = message["session_id"]
                 self.session_label.setText(self.settings.session_name)
-                self.remote_message_timer.setInterval(10000)  # increase the interval to 10s
+                self.remote_message_timer.setInterval(5000)  # increase the interval to 10s
 
                 if message['type'] == MessageType.start_daq.value:
                     self.log.info("got message to start recording")
@@ -582,6 +594,39 @@ class MCC_GUI(QMainWindow):
             elif message['type'] == MessageType.disconnected.value:
                 self.log.info("got message that client disconnected")
                 self.exit_remote_mode()
+
+            elif message['type'] == MessageType.copy_files.value:
+                self.log.debug('got message to copy files')
+                self.session_path = message['session_path']
+                if self.session_path:
+                    self.copy_recorded_file()
+
+            elif message['type'] == MessageType.purge_files.value:
+                self.log.debug('got message to purge files')
+                self.purge_recorded_file()
+
+    def purge_recorded_file(self):
+        #TODO add a check that this is the current file ?
+        self.log.info(f"Deleting file {self.mcc_board.file_name}")
+        try:
+            Path(self.mcc_board.file_name).unlink()
+        except FileNotFoundError:
+            self.log.warning(f"File {self.mcc_board.file_name} doesnt not exist")
+
+    def copy_recorded_file(self):
+        self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER }")
+        if not self.mcc_board.is_recording and not self.files_copied:
+            try:
+                if "MusterMaus" in self.settings.session_name:
+                    shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / self.mcc_board.file_name.name)
+                else:
+                    shutil.copyfile(self.mcc_board.file_name, Path(self.session_path) / DAQ_FOLDER /
+                                    self.mcc_board.file_name.name)
+            except (FileNotFoundError, IOError):
+                self.socket_comm.send_json_message(SocketMessage.respond_copy_fail)
+                return
+            self.files_copied = True
+            self.socket_comm.send_json_message(SocketMessage.respond_copy)
 
     def check_connection(self):
         if self.socket_comm.connected:

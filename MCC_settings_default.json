@@ -1,103 +1,103 @@
 {
     "scan_counters": false,
-    "num_channels": 6,
+    "num_channels": 14,
     "channel_list": [
         {
             "id": 0,
-            "name": "Channel_0",
+            "name": "NP_R",
             "active": true,
             "win": 0,
             "color": "#023eff"
         },
         {
             "id": 1,
-            "name": "Channel_1",
+            "name": "NP_C",
             "active": true,
             "win": 0,
             "color": "#ff7c00"
         },
         {
             "id": 2,
-            "name": "Channel_2",
+            "name": "Lick_spout",
             "active": true,
-            "win": 1,
+            "win": 2,
             "color": "#1ac938"
         },
         {
             "id": 3,
-            "name": "Channel_3",
+            "name": "IR_beams",
             "active": true,
-            "win": 2,
+            "win": 1,
             "color": "#e8000b"
         },
         {
             "id": 4,
-            "name": "Channel_4",
+            "name": "Cam_Trig",
             "active": true,
-            "win": 3,
+            "win": 1,
             "color": "#8b2be2"
         },
         {
             "id": 5,
-            "name": "Channel_5",
+            "name": "Angle_R",
             "active": true,
-            "win": 5,
+            "win": 4,
             "color": "#9f4800"
         },
         {
             "id": 6,
-            "name": "Channel_6",
-            "active": false,
-            "win": -1,
+            "name": "Angle_L",
+            "active": true,
+            "win": 5,
             "color": "#f14cc1"
         },
         {
             "id": 7,
-            "name": "Channel_7",
-            "active": false,
-            "win": -1,
+            "name": "Barcodes",
+            "active": true,
+            "win": 8,
             "color": "#a3a3a3"
         },
         {
             "id": 8,
-            "name": "Channel_8",
-            "active": false,
-            "win": -1,
+            "name": "NP_L",
+            "active": true,
+            "win": 0,
             "color": "#ffc400"
         },
         {
             "id": 9,
-            "name": "Channel_9",
-            "active": false,
-            "win": -1,
+            "name": "Reward_pump",
+            "active": true,
+            "win": 2,
             "color": "#00d7ff"
         },
         {
             "id": 10,
-            "name": "Channel_10",
-            "active": false,
-            "win": -1,
+            "name": "Trial_Sync",
+            "active": true,
+            "win": 2,
             "color": "#023eff"
         },
         {
             "id": 11,
             "name": "Channel_11",
-            "active": false,
+            "active": true,
             "win": -1,
             "color": "#ff7c00"
         },
         {
             "id": 12,
             "name": "Channel_12",
-            "active": false,
+            "active": true,
             "win": -1,
             "color": "#1ac938"
         },
         {
             "id": 13,
-            "name": "Channel_13",
-            "active": false,
-            "win": -1,
+            "name": "GateL",
+            "active": true,
+            "win": 8,
             "color": "#e8000b"
         },
         {
@@ -117,42 +117,31 @@
     ],
     "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
-    "sampling_rate": 1000,
+    "pulse_rate": 10,
+    "sampling_rate": 2000,
     "graphsettings": {
         "A": {
-            "Yrange": "+-10 V",
-            "time_base": "10 s"
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
         },
         "B": {
-            "Yrange": "+-10 V",
+            "Yrange": "0-5 V",
             "time_base": "5 s"
         },
         "C": {
-            "Yrange": "+-10 V",
-            "time_base": "2 s"
-        },
-        "D": {
-            "Yrange": "+-10 V",
-            "time_base": "1 s"
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
         },
         "E": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
         },
         "F": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "G": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
-        },
-        "H": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
         },
         "J": {
-            "Yrange": "+-10 V",
+            "Yrange": "0-5 V",
             "time_base": "20 s"
         },
         "I": {

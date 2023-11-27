@@ -23,6 +23,8 @@ class MessageType(Enum):
     status = 'status'
     response = 'response'
     disconnected = 'disconnected'
+    copy_files = 'copy_files'
+    purge_files = 'purge_files'
 
 class MessageStatus(Enum):
     ready = 'ready'
@@ -31,9 +33,12 @@ class MessageStatus(Enum):
     recording = 'recording'
     viewing_ok = 'viewing_ok'
     recording_ok = 'recording_ok'
+    recording_fail = 'recording_fail'
     stop_ok = 'stop_ok'
     pulsing_ok = 'pulsing_ok'
     calib_ok = 'calib_ok'
+    copy_ok = 'copy_ok'
+    copy_fail = 'copy_fail'
 
 class SocketMessage:
     status_error = {'type': MessageType.status.value, 'status': MessageStatus.error.value}
@@ -42,13 +47,17 @@ class SocketMessage:
     status_viewing = {'type': MessageType.status.value, 'status': MessageStatus.viewing.value}
 
     respond_recording = {'type': MessageType.response.value, 'status': MessageStatus.recording_ok.value}
+    respond_recording_fail = {'type': MessageType.response.value, 'status': MessageStatus.recording_fail.value}
     respond_viewing = {'type': MessageType.response.value, 'status': MessageStatus.viewing_ok.value}
     respond_stop = {'type': MessageType.response.value, 'status': MessageStatus.stop_ok.value}
     respond_pulsing = {'type': MessageType.response.value, 'status': MessageStatus.pulsing_ok.value}
     respond_calib = {'type': MessageType.response.value, 'status': MessageStatus.calib_ok.value}
+    respond_copy = {'type': MessageType.response.value, 'status': MessageStatus.copy_ok.value}
+    respond_copy_fail = {'type': MessageType.response.value, 'status': MessageStatus.copy_fail.value}
     client_disconnected = {'type': MessageType.disconnected.value}
 
     def __init__(self):
+        self._session_path = None
         self._fps = 30
         self._session_id = "test"
         self._daq_setting_file = ''
@@ -73,12 +82,16 @@ class SocketMessage:
         self.start_video_calibrec = {'type': MessageType.start_video_calibrec.value, 'session_id': 'calibration',
                                      'setting_file': self._basler_setting_file, 'frame_rate': 5}
 
+        self.copy_files = {'type': MessageType.copy_files.value, 'session_id': self._session_id,
+                                     'session_path': self._session_path}
+        self.purge_files = {'type': MessageType.purge_files.value, 'session_id': self._session_id}
+
     @property
     def pulse_lag(self):
         return self._pulse_lag
 
     @pulse_lag.setter
-    def pulse_lag(self, value: str):
+    def pulse_lag(self, value: int):
         self._pulse_lag = value
         self.update_messages()
 
@@ -89,6 +102,15 @@ class SocketMessage:
     @session_id.setter
     def session_id(self, value: str):
         self._session_id = value
+        self.update_messages()
+
+    @property
+    def session_path(self):
+        return self._session_path
+
+    @session_path.setter
+    def session_path(self, value: str):
+        self._session_path = value
         self.update_messages()
 
     @property
@@ -128,6 +150,8 @@ class SocketMessage:
         self.start_video_view.update(**{'session_id': self._session_id, 'setting_file': self.basler_setting_file,
                                         'frame_rate': self.fps})
         self.start_video_calibrec.update(**{'session_id': 'calibration', 'setting_file': self.basler_setting_file})
+        self.copy_files.update(**{'session_id': self.session_id, 'session_path': self._session_path})
+        self.purge_files.update(**{'session_id': self._session_id})
 
 
 class SocketComm:
@@ -162,7 +186,10 @@ class SocketComm:
         if self.type == 'client':
             pass
         elif self.type == 'server':
-            self._sock.bind((self.host, self.port))
+            try:
+                self._sock.bind((self.host, self.port))
+            except OSError:
+                self.log.warning('Adress alrady in use.. need to delete somehow ?')
             self._sock.listen()
             if self.use_ssl:
                 self._ssl_sock = self.context.wrap_socket(self._sock, server_side=True, do_handshake_on_connect=False)
@@ -231,7 +258,8 @@ class SocketComm:
             self._ssl_sock.close()
         if self.sock:
             self.sock.close()
-        self._sock.close()
+        if self._sock:
+            self._sock.close()
         self.connected = False
 
     def read_json_message(self) -> dict:
@@ -256,11 +284,25 @@ class SocketComm:
                 return message
         except json.decoder.JSONDecodeError:
             message = None
+            print('message decoding failed')
+        return message
+
+    def read_json_message_fast_linebreak(self) -> dict:
+        try:
+            message = self._recv_until(b'\n')
+            if message == -1:
+                return SocketMessage.client_disconnected
+            if message is not None:
+                message = json.loads(message.decode())
+        except json.decoder.JSONDecodeError:
+            message = None
+            print('message decoding failed')
         return message
 
     def send_json_message(self, message: dict):
         message = json.dumps(message).encode()
-        # message += b'\n'
+        self.log.info(f"Sending message {message}")
+        message += b'\n'
         self._send(message)
 
     def _connect(self, host, port):
@@ -301,6 +343,9 @@ class SocketComm:
                     data += self.sock.recv(1)
         except socket.timeout:
             data = None
+        except ConnectionResetError:
+            self.log.warning("Client disconnected")
+            data = -1
         return data
 
     def _recv_all(self):

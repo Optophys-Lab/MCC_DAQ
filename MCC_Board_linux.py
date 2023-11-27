@@ -66,6 +66,7 @@ class MCCBoard:
         self.buffer_size_seconds = 2
         self.memhandle = None
         self.stop_recordingevent = None
+        self.start_rec_time = 0
         if OS_TYPE == 'Linux':
             self.scan_options = ScanOptions.CONTINUOUS
         elif OS_TYPE == 'Windows':
@@ -352,12 +353,12 @@ class MCCBoard:
                     # Wait a short amount of time for more data to be acquired.
                     time.sleep(0.0001)
 
-                t += (time.monotonic() - t0)
-                loop_counter += 1
-                if loop_counter == 100:
-                    loop_counter = 0
-                    self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
-                    t = 0
+                # t += (time.monotonic() - t0)
+                # loop_counter += 1
+                # if loop_counter == 100:
+                #     loop_counter = 0
+                #     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+                #     t = 0
         # free buffer before exiting the Thread
         ul.win_buf_free(self.memhandle)
         self.memhandle = None
@@ -519,12 +520,12 @@ class MCCBoard:
                     # acquired.
                     time.sleep(0.0001)
 
-                t += (time.monotonic() - t0)
-                loop_counter += 1
-                if loop_counter == 100:
-                    loop_counter = 0
-                    self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
-                    t = 0
+                # t += (time.monotonic() - t0)
+                # loop_counter += 1
+                # if loop_counter == 100:
+                #     loop_counter = 0
+                #     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+                #     t = 0
 
         # free buffer before exiting the Thread
         self.memhandle = None
@@ -693,12 +694,12 @@ class MCCBoard:
                 # acquired.
                 time.sleep(0.0001)
 
-            t += (time.monotonic() - t0)
-            loop_counter += 1
-            if loop_counter == 100:
-                loop_counter = 0
-                self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
-                t = 0
+            # t += (time.monotonic() - t0)
+            # loop_counter += 1
+            # if loop_counter == 100:
+            #     loop_counter = 0
+            #     self.log.info(f'100 grabbing/rec loops took :{t:0.5f} s')
+            #     t = 0
 
         # free buffer before exiting the Thread
         self.memhandle = None
@@ -776,14 +777,14 @@ class MCCBoard:
 
         self.timer_number, = first_chan.channel_num
         actual_frequency, actual_duty_cycle, _ = ul.pulse_out_start(
-            self.board_num, self.timer_number, freq, duty_cycle, initial_delay=lag)
+            self.board_num, self.timer_number, freq, duty_cycle, initial_delay=lag/1000)
         self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
                       f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
 
     def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: float = 0):
 
         pulse_count = 0  # for continious operation
-        initial_delay = lag
+        initial_delay = lag/1000
 
         tmr_device = self.daq_device.get_tmr_device()
         (actual_frequency,
