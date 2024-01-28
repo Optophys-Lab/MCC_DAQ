@@ -1,6 +1,6 @@
 {
     "scan_counters": false,
-    "num_channels": 14,
+    "num_channels": 16,
     "channel_list": [
         {
             "id": 0,
@@ -81,16 +81,16 @@
         },
         {
             "id": 11,
-            "name": "Channel_11",
+            "name": "Laser4_Analog",
             "active": true,
-            "win": -1,
+            "win": 9,
             "color": "#ff7c00"
         },
         {
             "id": 12,
-            "name": "Channel_12",
+            "name": "Laser2_Analog",
             "active": true,
-            "win": -1,
+            "win": 9,
             "color": "#1ac938"
         },
         {
@@ -102,22 +102,22 @@
         },
         {
             "id": 14,
-            "name": "Channel_14",
-            "active": false,
-            "win": -1,
+            "name": "Laser2_TTL",
+            "active": true,
+            "win": 9,
             "color": "#8b2be2"
         },
         {
             "id": 15,
-            "name": "Channel_15",
-            "active": false,
-            "win": -1,
+            "name": "Laser4_TTL",
+            "active": true,
+            "win": 9,
             "color": "#9f4800"
         }
     ],
     "device": "USB-1608G_020A49C7",
     "voltage_range": "BIP5VOLTS",
-    "pulse_rate": 10,
+    "pulse_rate": 30,
     "sampling_rate": 2000,
     "graphsettings": {
         "A": {
@@ -145,8 +145,8 @@
             "time_base": "20 s"
         },
         "I": {
-            "Yrange": "+-10 V",
-            "time_base": "20 s"
+            "Yrange": "0-5 V",
+            "time_base": "10 s"
         },
         "K": {
             "Yrange": "+-10 V",
@@ -156,5 +156,6 @@
             "Yrange": "+-10 V",
             "time_base": "20 s"
         }
-    }
+    },
+    "session_name": "20231212_r0093_wt_1448"
 }
