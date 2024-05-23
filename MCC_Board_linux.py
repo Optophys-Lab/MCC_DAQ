@@ -1,22 +1,19 @@
+import datetime
 import logging
 import platform
-from pathlib import Path
-from ctypes import c_double, cast, POINTER, addressof, sizeof
-from threading import Thread, Event
-from queue import Queue, Full, Empty
-import json
 import struct
 import time
-import datetime
-
-import numpy as np
+from ctypes import c_double, cast, POINTER, addressof, sizeof
+from pathlib import Path
+from queue import Queue, Full
+from threading import Thread
 
 from GUI_utils import MCC_settings
 
 OS_TYPE = platform.system()
 if OS_TYPE == 'Linux':
     from uldaq import (get_daq_device_inventory, DaqDevice, AInScanFlag,
-                       AiInputMode, AiQueueElement, create_float_buffer,
+                       AiInputMode, create_float_buffer,
                        ScanStatus, InterfaceType, TmrIdleState, PulseOutOption)
     from uldaq import ScanOption as ScanOptions
     from uldaq import Range as ULRange
@@ -29,11 +26,10 @@ elif OS_TYPE == 'Windows':
     to ul.py i
     """
     from mcculw import ul
-    from mcculw.ul import get_daq_device_inventory, a_input_mode, create_daq_device
+    from mcculw.ul import get_daq_device_inventory, a_input_mode
     from mcculw.device_info import DaqDeviceInfo as DaqDevice
-    from mcculw.enums import InterfaceType, ErrorCode, ScanOptions, ULRange, Status, FunctionType, CounterChannelType
+    from mcculw.enums import InterfaceType, ScanOptions, ULRange, Status, FunctionType, CounterChannelType
     from mcculw.enums import AnalogInputMode as AiInputMode
-    from mcculw.ul import ULError
 
 
 # AnalogInputMode ==  AiInputMode
@@ -41,9 +37,9 @@ elif OS_TYPE == 'Windows':
 
 
 class MCCBoard:
-    '''Class for acquiring data from a MCC board on a host computer.
+    """Class for acquiring data from a MCC board on a host computer.
     This class may be reused in different gui applications, thus should be a self_sufficent container
-    '''
+    """
 
     def __init__(self):
         self.is_viewing = False
@@ -163,7 +159,7 @@ class MCCBoard:
         # data = create_float_buffer(channel_count, samples_per_channel)
 
     def start_recording(self, settings: MCC_settings):
-        # Record option is mandatory for now..
+        # Record option is mandatory for now.
         self.low_chan, self.high_chan = settings.get_active_channels()
         self.ai_range = ULRange[settings.voltage_range]
         self.num_channels = settings.num_channels
@@ -447,9 +443,9 @@ class MCCBoard:
 
                     # Check if the data wraps around the end of the UL
                     # buffer. Multiple copy operations will be required.
-                    # in linux i could find out via transfer_status.current_index
+                    # in linux I could find out via transfer_status.current_index
                     if curr_index < prev_index - 1 and curr_index != 0:  # todo check if i need -1 ?
-                        # self.log.info('This weird wrap happended.. ')
+                        # self.log.info('This weird wrap happended. ')
                         first_chunk_size = ul_buffer_count - prev_index
                         second_chunk_size = (
                                 write_chunk_size - first_chunk_size)
@@ -531,7 +527,7 @@ class MCCBoard:
         self.memhandle = None
 
     def start_viewing(self, settings: MCC_settings):
-        # Record option is mandatory for now..
+        # Record option is mandatory for now.
         self.low_chan, self.high_chan = settings.get_active_channels()
         self.ai_range = ULRange[settings.voltage_range]
         self.num_channels = settings.num_channels
@@ -545,8 +541,8 @@ class MCCBoard:
             self.recording_thread.start()
 
         elif OS_TYPE == 'Windows':
-            raise NotImplementedError
             self.log.debug('Started recording-thread via Windows routine')
+            raise NotImplementedError
             # self.start_rec_time = time.monotonic()
             # self.recording_thread = Thread(target=self.start_recording_windows)
             # self.recording_thread.start()
@@ -619,9 +615,9 @@ class MCCBoard:
 
                 # Check if the data wraps around the end of the UL
                 # buffer. Multiple copy operations will be required.
-                # in linux i could find out via transfer_status.current_index
+                # in linux I could find out via transfer_status.current_index
                 if curr_index < prev_index - 1 and curr_index != 0:  # todo check if i need -1 ?
-                    # self.log.info('This weird wrap happended.. ')
+                    # self.log.info('This weird wrap happended. ')
                     first_chunk_size = ul_buffer_count - prev_index
                     second_chunk_size = (
                             write_chunk_size - first_chunk_size)
@@ -643,7 +639,6 @@ class MCCBoard:
                             write_chunk_array[:first_chunk_size] = self.memhandle[0:second_chunk_size]
                         except ValueError:
                             print("a")
-
 
                 else:
                     # write_chunk_array = np.copy(np.frombuffer(self.memhandle, count=write_chunk_size, offset=8 * prev_index))
@@ -777,14 +772,14 @@ class MCCBoard:
 
         self.timer_number, = first_chan.channel_num
         actual_frequency, actual_duty_cycle, _ = ul.pulse_out_start(
-            self.board_num, self.timer_number, freq, duty_cycle, initial_delay=lag/1000)
+            self.board_num, self.timer_number, freq, duty_cycle, initial_delay=lag / 1000)
         self.log.info(f"Start pulsing with {actual_frequency:0.1f} Hz and "
                       f"{actual_duty_cycle * (1000 / actual_frequency):0.3f} ms pulse width")
 
     def start_pulsing_linux(self, freq: float = 30, duty_cycle: (float, None) = 0.15, lag: int = 0):
 
         pulse_count = 0  # for continious operation
-        initial_delay = lag/1000
+        initial_delay = lag / 1000
 
         tmr_device = self.daq_device.get_tmr_device()
         (actual_frequency,
@@ -815,6 +810,5 @@ class MCCBoard:
         else:
             self.stop_pulsing()
             if self.memhandle:
-                # Free the buffer in a finally block to prevent a memory leak.
                 ul.win_buf_free(self.memhandle)
             ul.release_daq_device(self.board_num)

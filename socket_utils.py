@@ -1,11 +1,8 @@
+import logging
+import select
 import socket
 import ssl
 import threading
-import json
-import time
-import select
-import logging
-
 from enum import Enum
 
 
@@ -26,6 +23,7 @@ class MessageType(Enum):
     copy_files = 'copy_files'
     purge_files = 'purge_files'
 
+
 class MessageStatus(Enum):
     ready = 'ready'
     error = 'error'
@@ -39,6 +37,7 @@ class MessageStatus(Enum):
     calib_ok = 'calib_ok'
     copy_ok = 'copy_ok'
     copy_fail = 'copy_fail'
+
 
 class SocketMessage:
     status_error = {'type': MessageType.status.value, 'status': MessageStatus.error.value}
@@ -83,7 +82,7 @@ class SocketMessage:
                                      'setting_file': self._basler_setting_file, 'frame_rate': 5}
 
         self.copy_files = {'type': MessageType.copy_files.value, 'session_id': self._session_id,
-                                     'session_path': self._session_path}
+                           'session_path': self._session_path}
         self.purge_files = {'type': MessageType.purge_files.value, 'session_id': self._session_id}
 
     @property
@@ -174,7 +173,7 @@ class SocketComm:
             self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         # self.context.set_ciphers('DEFAULT')
         self.use_ssl = use_ssl
-        # this doesnt work yet get some weird error from ssl module
+        # this does not work yet get some weird error from ssl module
         self.connected = False
         self.stop_event = threading.Event()
         self.log = logging.getLogger(f"SocketComm_{self.type}")
@@ -262,7 +261,7 @@ class SocketComm:
             self._sock.close()
         self.connected = False
 
-    def read_json_message(self) -> dict:
+    def read_json_message(self) -> [dict, None]:
         try:
             message = self._recv_until(b'\n')
             if message is not None:
@@ -273,7 +272,7 @@ class SocketComm:
             message = None
         return message
 
-    def read_json_message_fast(self) -> dict:
+    def read_json_message_fast(self) -> [dict, None]:
         try:
             message = self._recv(1024)
             if message == -1:
@@ -367,8 +366,8 @@ class SocketComm:
 
 if __name__ == "__main__":
     import time
-    import argparse
     import json
+
     """
     parser = argparse.ArgumentParser(description='Socket communication test')
     parser.add_argument('--type', type=str, default='server', help='Socket type: client or server')
@@ -393,6 +392,7 @@ if __name__ == "__main__":
     """
 
     import json
+
     sock = SocketComm('client')
     sock.create_socket()
     sock.connect()
@@ -407,3 +407,4 @@ if __name__ == "__main__":
     message = {'type': 'stop'}
     sock._send(json.dumps(message).encode())
     sock.close_socket()
+

@@ -3,11 +3,11 @@ from pathlib import Path
 import json
 import datetime
 from PyQt6 import QtWidgets, QtCore, QtGui
+from enum import IntEnum, Enum, unique
 
 COLOR_PALETTE = ['#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800', '#f14cc1', '#a3a3a3', '#ffc400',
                  '#00d7ff', '#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800']
 # 'bright' from seaborn
-from enum import IntEnum, Enum, unique
 
 MAX_GRAPHS = 4
 
@@ -113,12 +113,6 @@ class GraphSettings(QtWidgets.QWidget):
             self.graph_name_list[idx].setText(PlotWindowEnum(MAX_GRAPHS * self.idx + idx).name)
 
     def create_settings_widget(self):
-        # for _ in range(len(self.created_elements)):
-        #    el = self.created_elements.pop()
-        #    self.layout.removeWidget(el)
-        #    #del el
-
-        # print(f'was called with {self._nr_of_graphs}')
         self.timebase_combo_list = []
         self.yrange_combo_list = []
         self.graph_name_list = []
@@ -206,7 +200,7 @@ class MyBinaryFile_Reader:
             self.rec_duration = self.data.shape[0] / self.sampling_rate
 
     def make_fields_toproperties(self):
-        '''this adds the channel names as fields to the class'''
+        """this adds the channel names as fields to the class"""
         for idx, channel_name in enumerate(self.channel_names):
             self.__dict__[channel_name] = self.data[:, idx]
 
@@ -260,12 +254,8 @@ class MCC_settings:
             raise NotImplementedError
 
         for ch_id in range(num_channels):
-            channel_dict = {}
-            channel_dict['id'] = ch_id
-            channel_dict['name'] = f"Channel_{ch_id}"
-            channel_dict['active'] = True
-            channel_dict['win'] = -1
-            channel_dict['color'] = COLOR_PALETTE[ch_id]
+            channel_dict = {'id': ch_id, 'name': f"Channel_{ch_id}", 'active': True, 'win': -1,
+                            'color': COLOR_PALETTE[ch_id]}
             self.channel_list.append(channel_dict)
 
     def from_file(self, path2file: (str, Path)):
@@ -281,17 +271,6 @@ class MCC_settings:
             json.dump(dict_to_save, fi, indent=4)
 
     def add_graphsettings(self, graphsetting: dict):
-        # # throw away old settings
-        # if "A" in graphsetting.keys():
-        #     for graph_name in [el.name for el in list(PlotWindowEnum)[1:5]]:
-        #         self.graphsettings.pop(graph_name, None)
-        # elif "E" in graphsetting.keys():
-        #     for graph_name in [el.name for el in list(PlotWindowEnum)[5:9]]:
-        #         self.graphsettings.pop(graph_name, None)
-        # elif "J" in graphsetting.keys():
-        #     for graph_name in [el.name for el in list(PlotWindowEnum)[9:13]]:
-        #         self.graphsettings.pop(graph_name, None)
-
         self.graphsettings.update({**graphsetting})
 
 

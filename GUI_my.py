@@ -1,50 +1,27 @@
-"""
-Tool to record using MCC DAQ Devices.
+# Author: Artur
+# Contact: artur.schneider@biologie.uni-freiburg.de
 
-Author: Artur
-Contact: artur.schneider@biologie.uni-freiburg.de
-
-Features:
-- recording selected channels in binary file
-- pulsation functionality
-- visualization of selected channels in configurable graphs
-- settings can be set/loaded from file
-- can be controlled remotely via socket connection
-- only 16 channel model 1608 was tested
-
-maybe:
-- implement trigger mode ? wait for digital signal to start recording ?
-- disable remote mode if no device is connected ?
-"""
-
-import json
 import logging
-import queue
 import shutil
 import sys
-import numpy as np
-from queue import Queue, Empty
-
-from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6 import uic, QtGui
-import pyqtgraph as pg
-
 from pathlib import Path
-from datetime import datetime
+from queue import Empty
 
-from MCC_Board_linux import MCCBoard
+import numpy as np
+from PyQt6 import uic, QtGui
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+
 from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
+from MCC_Board_linux import MCCBoard
 from socket_utils import SocketComm, MessageType, SocketMessage
 
-#from datastructure_tools.DataJoint.schemas.beh_flex import NAME_OF_BEHBLOCK
-# TODO fix this import !
 log = logging.getLogger('main')
 log.setLevel(logging.DEBUG)
 
 # logging.basicConfig(filename='GUI.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = "0.5.0"
+VERSION = "1.0.0rc1"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
 HOST = "localhost"  # if connecting to remote, use the IP of the current machine
@@ -52,9 +29,11 @@ PORT = 8800
 ENABLE_REMOTE = True
 DAQ_FOLDER = 'daq'
 
+
 class MCC_GUI(QMainWindow):
     def __init__(self):
         super(MCC_GUI, self).__init__()
+        self.s_since_start = None
         self.session_path = None
         self.files_copied = False
         self.is_remote_ctr = False
@@ -131,6 +110,7 @@ class MCC_GUI(QMainWindow):
 
         self.scan_devices()
         self.load_settings_fromfile('MCC_settings_default.json')
+
     ### DAQ Board interaction
     def scan_devices(self):
         """
@@ -297,7 +277,7 @@ class MCC_GUI(QMainWindow):
         for idx, win_id in enumerate(plotting_indx):
             try:
                 self.plotting_widgets[idx].reset(self.settings, win_id=win_id)
-            except AttributeError: # no graphs here
+            except AttributeError:  # no graphs here
                 continue
             index_vec = []
             for ch_id, channel in enumerate(self.settings.channel_list):
@@ -362,12 +342,8 @@ class MCC_GUI(QMainWindow):
             # this lead to a bug where the channel list was not updated when a channel was disabled because whole tab
             # was disabled
             # TODO find a better way to adjust number of channels!
-            channel_dict = {}
-            channel_dict['id'] = ch_id
-            channel_dict['name'] = ch_name.text()
-            channel_dict['active'] = ch_rec.isChecked()
-            channel_dict['win'] = PlotWindowEnum[ch_win.currentText()].value
-            channel_dict['color'] = COLOR_PALETTE[ch_id]
+            channel_dict = {'id': ch_id, 'name': ch_name.text(), 'active': ch_rec.isChecked(),
+                            'win': PlotWindowEnum[ch_win.currentText()].value, 'color': COLOR_PALETTE[ch_id]}
             self.settings.channel_list.append(channel_dict)
 
         self.settings.voltage_range = self.Range_combo.currentText()
@@ -411,7 +387,8 @@ class MCC_GUI(QMainWindow):
 
         self.Counters_checkBox.setChecked(self.settings.scan_counters)
         self.PulsesSpin.setValue(self.settings.pulse_rate)
-        #self.settings.
+        # self.settings.
+
     def set_graph_options(self):
         for ele in self.channel_win:
             curr_element = ele.currentText()
@@ -489,7 +466,6 @@ class MCC_GUI(QMainWindow):
                 self.enter_remote_mode()
 
         else:
-            # self.abort_remoteconnection()
             self.exit_remote_mode()
 
     def enter_remote_mode(self):
@@ -527,7 +503,6 @@ class MCC_GUI(QMainWindow):
         message = self.socket_comm.read_json_message_fast_linebreak()
         if message:
             # parse message
-            print(message)
             if message['type'] == MessageType.start_daq.value \
                     or message['type'] == MessageType.start_daq_viewing.value:
                 if self.mcc_board.is_recording or self.mcc_board.is_viewing:  # got record but we already are !
@@ -536,7 +511,7 @@ class MCC_GUI(QMainWindow):
                     return
 
                 try:
-                    if message["setting_file"]:
+                    if message.get("setting_file", False):
                         self.load_settings_fromfile(message["setting_file"])
                         self.log.debug(f"loaded settings from {message['setting_file']}")
                 except (FileNotFoundError, KeyError):
@@ -606,7 +581,6 @@ class MCC_GUI(QMainWindow):
                 self.purge_recorded_file()
 
     def purge_recorded_file(self):
-        #TODO add a check that this is the current file ?
         self.log.info(f"Deleting file {self.mcc_board.file_name}")
         try:
             Path(self.mcc_board.file_name).unlink()
@@ -614,7 +588,7 @@ class MCC_GUI(QMainWindow):
             self.log.warning(f"File {self.mcc_board.file_name} doesnt not exist")
 
     def copy_recorded_file(self):
-        self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER }")
+        self.log.info(f"Copying file {self.mcc_board.file_name} to {Path(self.session_path) / DAQ_FOLDER}")
         if not self.mcc_board.is_recording and not self.files_copied:
             try:
                 if "MusterMaus" in self.settings.session_name:
@@ -627,13 +601,6 @@ class MCC_GUI(QMainWindow):
                 return
             self.files_copied = True
             self.socket_comm.send_json_message(SocketMessage.respond_copy)
-
-    def check_connection(self):
-        if self.socket_comm.connected:
-            self.remote_dialog.close()
-
-    def abort_remoteconnection(self):
-        self.socket_comm.stop_waiting_for_connection()
 
     def app_is_exiting(self):
         if self.socket_comm:
@@ -659,7 +626,6 @@ class MCC_GUI(QMainWindow):
             elif message == QMessageBox.StandardButton.Yes:
                 self.log.info('not exiting')
         self.app_is_exiting()
-        # self.disable_console_logging()
         super(MCC_GUI, self).closeEvent(event)
 
 
