@@ -545,15 +545,90 @@ class MCCBoard:
             self.recording_thread.start()
 
         elif OS_TYPE == 'Windows':
-            raise NotImplementedError
-            self.log.debug('Started recording-thread via Windows routine')
-            # self.start_rec_time = time.monotonic()
-            # self.recording_thread = Thread(target=self.start_recording_windows)
-            # self.recording_thread.start()
+            self.log.debug('Start viewing via Windows routine')
+            self.start_rec_time = time.monotonic()
+            self.recording_thread = Thread(target=self.start_viewing_windows)
+            self.recording_thread.start()
         else:
             raise NotImplementedError
 
         self.is_viewing = True
+
+    def start_viewing_windows(self):
+        points_per_channel = max(self.sampling_rate * self.buffer_size_seconds, 10)
+        if self.ai_info.packet_size != 1:
+            packet_size = self.ai_info.packet_size
+            remainder = points_per_channel % packet_size
+            if remainder != 0:
+                points_per_channel += packet_size - remainder
+        ul_buffer_count = points_per_channel * self.num_channels
+        write_chunk_size = int(ul_buffer_count / 20)
+
+        self.memhandle = ul.scaled_win_buf_alloc(ul_buffer_count)
+        write_chunk_array = (c_double * write_chunk_size)()
+
+        if not self.memhandle:
+            raise Exception('Failed to allocate memory')
+
+        ul.a_in_scan(
+            self.board_num, self.low_chan, self.high_chan, ul_buffer_count,
+            self.sampling_rate, self.ai_range, self.memhandle, self.scan_options)
+
+        status = Status.IDLE
+        while status == Status.IDLE:
+            status, _, _ = ul.get_status(self.board_num, FunctionType.AIFUNCTION)
+
+        prev_count = 0
+        prev_index = 0
+        write_ch_num = self.low_chan
+
+        while status != Status.IDLE:
+            status, curr_count, _ = ul.get_status(self.board_num, FunctionType.AIFUNCTION)
+            new_data_count = curr_count - prev_count
+            if new_data_count > ul_buffer_count:
+                ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
+                self.log.error('A buffer overrun occurred')
+                break
+
+            if new_data_count > write_chunk_size:
+                if prev_index + write_chunk_size > ul_buffer_count - 1:
+                    first_chunk_size = ul_buffer_count - prev_index
+                    second_chunk_size = write_chunk_size - first_chunk_size
+                    ul.scaled_win_buf_to_array(self.memhandle, write_chunk_array, prev_index, first_chunk_size)
+                    second_chunk_pointer = cast(addressof(write_chunk_array) + first_chunk_size * sizeof(c_double), POINTER(c_double))
+                    ul.scaled_win_buf_to_array(self.memhandle, second_chunk_pointer, 0, second_chunk_size)
+                else:
+                    ul.scaled_win_buf_to_array(self.memhandle, write_chunk_array, prev_index, write_chunk_size)
+
+                status, curr_count, _ = ul.get_status(self.board_num, FunctionType.AIFUNCTION)
+                if curr_count - prev_count > ul_buffer_count:
+                    ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
+                    self.log.error('A buffer overrun occurred2')
+                    break
+
+                for i in range(write_chunk_size):
+                    try:
+                        self.data_queues[write_ch_num - self.low_chan].put_nowait(write_chunk_array[i])
+                    except Full:
+                        self.log.error('Queue buffer is FULL!!')
+                        ul.stop_background(self.board_num, FunctionType.AIFUNCTION)
+                        break
+                    write_ch_num += 1
+                    if write_ch_num == self.high_chan + 1:
+                        write_ch_num = self.low_chan
+
+                prev_count += write_chunk_size
+                prev_index += write_chunk_size
+                prev_index %= ul_buffer_count
+            else:
+                time.sleep(0.0001)
+
+        ul.win_buf_free(self.memhandle)
+        self.memhandle = None
+
+
+
+
 
     def start_viewing_linux(self):
         ai_device = self.daq_device.get_ai_device()
@@ -715,8 +790,8 @@ class MCCBoard:
         """windows library routine to reset counters"""
         ctr_info = self.daq_device.get_ctr_info()
         self.dev_counters = []
-        for idx in range(len(ctr_info)):
-            counter_num = ctr_info.chan_info[0].channel_num
+        for chan in ctr_info.chan_info:
+            counter_num = chan.channel_num
             self.dev_counters.append(counter_num)
             ul.c_clear(self.board_num, counter_num)
 
