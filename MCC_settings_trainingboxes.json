@@ -1,0 +1,160 @@
+{
+    "scan_counters": false,
+    "num_channels": 16,
+    "channel_list": [
+        {
+            "id": 0,
+            "name": "Solenoid_right",
+            "active": true,
+            "win": 0,
+            "color": "#023eff"
+        },
+        {
+            "id": 1,
+            "name": "Solenoid_left",
+            "active": true,
+            "win": 0,
+            "color": "#ff7c00"
+        },
+        {
+            "id": 2,
+            "name": "Camera",
+            "active": true,
+            "win": 8,
+            "color": "#1ac938"
+        },
+        {
+            "id": 3,
+            "name": "Tone_1",
+            "active": true,
+            "win": 2,
+            "color": "#e8000b"
+        },
+        {
+            "id": 4,
+            "name": "Tone_2",
+            "active": true,
+            "win": 2,
+            "color": "#8b2be2"
+        },
+        {
+            "id": 5,
+            "name": "Motor_left",
+            "active": true,
+            "win": 2,
+            "color": "#9f4800"
+        },
+        {
+            "id": 6,
+            "name": "Motor_right",
+            "active": true,
+            "win": 2,
+            "color": "#f14cc1"
+        },
+        {
+            "id": 7,
+            "name": "Strain_left",
+            "active": true,
+            "win": 1,
+            "color": "#a3a3a3"
+        },
+        {
+            "id": 8,
+            "name": "Strain_right",
+            "active": true,
+            "win": 1,
+            "color": "#ffc400"
+        },
+        {
+            "id": 9,
+            "name": "Strain_lever",
+            "active": true,
+            "win": 4,
+            "color": "#00d7ff"
+        },
+        {
+            "id": 10,
+            "name": "Cap_right",
+            "active": true,
+            "win": 1,
+            "color": "#023eff"
+        },
+        {
+            "id": 11,
+            "name": "Cap_left",
+            "active": true,
+            "win": 1,
+            "color": "#ff7c00"
+        },
+        {
+            "id": 12,
+            "name": "Vib_Stim",
+            "active": true,
+            "win": 5,
+            "color": "#1ac938"
+        },
+        {
+            "id": 13,
+            "name": "Wheel",
+            "active": true,
+            "win": 8,
+            "color": "#e8000b"
+        },
+        {
+            "id": 14,
+            "name": "",
+            "active": true,
+            "win": 9,
+            "color": "#8b2be2"
+        },
+        {
+            "id": 15,
+            "name": "",
+            "active": true,
+            "win": 9,
+            "color": "#9f4800"
+        }
+    ],
+    "device": "USB-1608G",
+    "voltage_range": "BIP5VOLTS",
+    "pulse_rate": 10,
+    "sampling_rate": 1000,
+    "graphsettings": {
+        "A": {
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
+        },
+        "B": {
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
+        },
+        "C": {
+            "Yrange": "0-5 V",
+            "time_base": "5 s"
+        },
+        "E": {
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
+        },
+        "F": {
+            "Yrange": "0-5 V",
+            "time_base": "1 s"
+        },
+        "J": {
+            "Yrange": "0-5 V",
+            "time_base": "20 s"
+        },
+        "I": {
+            "Yrange": "0-5 V",
+            "time_base": "10 s"
+        },
+        "K": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        },
+        "L": {
+            "Yrange": "+-10 V",
+            "time_base": "20 s"
+        }
+    }
+}
