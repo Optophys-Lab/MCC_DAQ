@@ -4,100 +4,100 @@
     "channel_list": [
         {
             "id": 0,
-            "name": "Solenoid_right",
+            "name": "StrainGauge1_left",
             "active": true,
             "win": 0,
             "color": "#023eff"
         },
         {
             "id": 1,
-            "name": "Solenoid_left",
+            "name": "StrainGauge2_right",
             "active": true,
-            "win": 0,
+            "win": 1,
             "color": "#ff7c00"
         },
         {
             "id": 2,
-            "name": "Camera",
+            "name": "StrainGauge3_lever",
             "active": true,
-            "win": 8,
+            "win": 2,
             "color": "#1ac938"
         },
         {
             "id": 3,
-            "name": "Tone_1",
+            "name": "Wheel",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#e8000b"
         },
         {
             "id": 4,
-            "name": "Tone_2",
+            "name": "Camera_Trigger",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#8b2be2"
         },
         {
             "id": 5,
-            "name": "Motor_left",
+            "name": "CapSensor_left",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#9f4800"
         },
         {
             "id": 6,
-            "name": "Motor_right",
+            "name": "CapSensor_right",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#f14cc1"
         },
         {
             "id": 7,
-            "name": "Strain_left",
+            "name": "ArduinoEvents",
             "active": true,
-            "win": 1,
+            "win": 4,
             "color": "#a3a3a3"
         },
         {
             "id": 8,
-            "name": "Strain_right",
+            "name": "ThresholdSG_left",
             "active": true,
-            "win": 1,
+            "win": 0,
             "color": "#ffc400"
         },
         {
             "id": 9,
-            "name": "Strain_lever",
+            "name": "ThresholdSG_right",
             "active": true,
-            "win": 4,
+            "win": 1,
             "color": "#00d7ff"
         },
         {
             "id": 10,
-            "name": "Cap_right",
+            "name": "ThresholdSG_lever",
             "active": true,
-            "win": 1,
+            "win": 2,
             "color": "#023eff"
         },
         {
             "id": 11,
-            "name": "Cap_left",
+            "name": "meh",
             "active": true,
-            "win": 1,
+            "win": 5,
             "color": "#ff7c00"
         },
         {
             "id": 12,
-            "name": "Vib_Stim",
+            "name": "pewwww",
             "active": true,
             "win": 5,
             "color": "#1ac938"
         },
         {
             "id": 13,
-            "name": "Wheel",
+            "name": "gagagag",
             "active": true,
-            "win": 8,
+            "win": 5,
             "color": "#e8000b"
         },
         {
@@ -116,20 +116,20 @@
         }
     ],
     "device": "USB-1608G",
-    "voltage_range": "BIP5VOLTS",
+    "voltage_range": "BIP10VOLTS",
     "pulse_rate": 10,
     "sampling_rate": 1000,
     "graphsettings": {
         "A": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "B": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "C": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "E": {

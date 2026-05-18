@@ -95,8 +95,6 @@ class MCCBoard:
             raise NotImplementedError
 
     def connect_to_device_windows(self, idx):
-        ul.create_daq_device(self.board_num, self.devices[idx])
-
         self.daq_device = DaqDevice(self.board_num)
         if not self.daq_device.supports_analog_input:
             raise Exception('Error: The DAQ device does not support '
