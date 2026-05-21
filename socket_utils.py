@@ -182,6 +182,8 @@ class SocketComm:
         self.message_time = time.monotonic()
 
     def create_socket(self):
+        if self._sock is not None: #don't recreate socket if it exists
+            return
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if self.type == 'client':
             pass
@@ -224,7 +226,8 @@ class SocketComm:
         """
         Accepts connection in a separate thread, to not block the main thread
         """
-        self.stop_event.clear()
+        self.stop_event.set()  # exit old acceptance thread
+        self.stop_event.clear()  # reset for new thread
         self.acception_thread = threading.Thread(target=self.accept_connection)
         self.acception_thread.start()
 
@@ -258,8 +261,17 @@ class SocketComm:
             self._ssl_sock.close()
         if self.sock:
             self.sock.close()
+            self.sock = None #clears the reference
         if self._sock:
             self._sock.close()
+            self._sock = None #clears the reference
+        self.connected = False
+
+    def close_client_socket(self):
+        """close only the client connection,but keep socket open"""
+        if self.sock: #client connection
+            self.sock.close()
+            self.sock = None
         self.connected = False
 
     def read_json_message(self) -> dict:

@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import datetime
 from PyQt6 import QtWidgets, QtCore, QtGui
+from params import *
 
 COLOR_PALETTE = ['#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800', '#f14cc1', '#a3a3a3', '#ffc400',
                  '#00d7ff', '#023eff', '#ff7c00', '#1ac938', '#e8000b', '#8b2be2', '#9f4800']
@@ -213,6 +214,7 @@ class MyBinaryFile_Reader:
 
 class MCC_settings:
     def __init__(self):
+        self.save_path = DEFAULT_SAVE_PATH
         self.scan_counters = False
         self.num_channels = None
         self.channel_list = []

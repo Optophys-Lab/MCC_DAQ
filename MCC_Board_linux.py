@@ -171,13 +171,13 @@ class MCCBoard:
         # self.data_queues = [Queue(10000)] * self.num_channels
         self.data_queues = [Queue(1000) for _ in range(self.num_channels)]
         # self.stop_recordingevent = event
-        Path("data").mkdir(exist_ok=True)
+        Path(settings.save_path).mkdir(exist_ok=True)  #sets default data folder
         try:
-            self.file_name = Path("data") / f"{settings.session_name}.bin"
+            self.file_name = Path(settings.save_path) / f"{settings.session_name}.bin"
             if settings.session_name is None:
                 raise AttributeError
         except AttributeError:  # no session name was passed
-            self.file_name = Path("data") / f"DAQrec_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.bin"
+            self.file_name = Path(settings.save_path) / f"DAQrec_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.bin"
 
         if OS_TYPE == 'Linux':
             self.log.debug('Start recording via Linux routine')

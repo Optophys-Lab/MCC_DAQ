@@ -36,6 +36,7 @@ from datetime import datetime
 from MCC_Board_linux import MCCBoard
 from GUI_utils import MCC_settings, PlotWindowEnum, COLOR_PALETTE, MAX_GRAPHS, RemoteConnDialog
 from socket_utils import SocketComm, MessageType, SocketMessage
+from params import *
 
 #from datastructure_tools.DataJoint.schemas.beh_flex import NAME_OF_BEHBLOCK
 # TODO fix this import !
@@ -47,10 +48,7 @@ log.setLevel(logging.DEBUG)
 VERSION = "0.5.0"
 UPDATE_GRAPHS_TIME = 100  # ms
 COUNTER_UPDATE_TIME = 1000  # ms
-HOST = "localhost"  # if connecting to remote, use the IP of the current machine
-PORT = 8800
-ENABLE_REMOTE = True
-DAQ_FOLDER = 'daq'
+
 
 class MCC_GUI(QMainWindow):
     def __init__(self):
@@ -79,6 +77,7 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabIcon(3, QtGui.QIcon("GUI/icons/Window.svg"))
         self.tabWidget.setTabIcon(4, QtGui.QIcon("GUI/icons/Window.svg"))
         self.settings = MCC_settings()
+        self.settings.save_path = DEFAULT_SAVE_PATH
         if ENABLE_REMOTE:
             self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
         else:  # disable remote mode
@@ -477,7 +476,7 @@ class MCC_GUI(QMainWindow):
         self.set_graph_options()
 
     def remote_mode(self):
-        if not self.socket_comm.connected:
+        if not self.is_remote_ctr:  #if we are not in remote mode
             self.socket_comm.threaded_accept_connection()
             remote_dialog = RemoteConnDialog(self.socket_comm, self)
             remote_dialog.exec()
@@ -511,13 +510,13 @@ class MCC_GUI(QMainWindow):
         self.socket_comm.send_json_message(SocketMessage.status_ready)
 
     def exit_remote_mode(self):
+        self.is_remote_ctr = False
         self.socket_comm.close_socket()
         self.Client_label.setText("disconnected")
         self.RemoteModeButton.setText("ENTER\nREMOTE-mode")
         if self.remote_message_timer:
             self.remote_message_timer.stop()
             self.remote_message_timer = None
-        self.is_remote_ctr = False
         self.RUNButton.setEnabled(True)
         self.RECButton.setEnabled(True)
         self.tabWidget.setTabEnabled(1, True)
@@ -542,6 +541,12 @@ class MCC_GUI(QMainWindow):
                 except (FileNotFoundError, KeyError):
                     self.log.error("passed settings file not found")
 
+                try:
+                    if message["save_path"]:
+                        self.settings.save_path = message["save_path"]
+                except KeyError:
+                    pass
+
                 self.settings.session_name = message["session_id"]
                 self.session_label.setText(self.settings.session_name)
                 self.remote_message_timer.setInterval(5000)  # increase the interval to 10s
@@ -561,6 +566,9 @@ class MCC_GUI(QMainWindow):
                     self.stop_daq()
                     self.remote_message_timer.setInterval(500)
                     self.socket_comm.send_json_message(SocketMessage.respond_stop)
+                    self.socket_comm.close_client_socket() #only close client conn
+                    if self.is_remote_ctr:
+                        self.socket_comm.threaded_accept_connection() #listen for new client conn
                 else:
                     self.log.info("got message to stop, but nothing is running")
                     self.socket_comm.send_json_message(SocketMessage.status_error)
