@@ -300,6 +300,8 @@ class SocketComm:
         return message
 
     def read_json_message_fast_linebreak(self) -> dict:
+        if self.sock is None:
+            return None
         try:
             message = self._recv_until(b'\n')
             if message == -1:

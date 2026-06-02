@@ -78,6 +78,7 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabIcon(4, QtGui.QIcon("GUI/icons/Window.svg"))
         self.settings = MCC_settings()
         self.settings.save_path = DEFAULT_SAVE_PATH
+        self.SavePath_label.setText(f'<b>Save path:</b> {DEFAULT_SAVE_PATH}') #label for the gui
         if ENABLE_REMOTE:
             self.socket_comm = SocketComm(type='server', host=HOST, port=PORT)
         else:  # disable remote mode
@@ -336,6 +337,15 @@ class MCC_GUI(QMainWindow):
         self.timer_info.setText(f'{int(self.s_since_start / 60):02d}:{self.s_since_start % 60:02d}')
 
     ##### SETTINGS ######
+    def set_save_path(self, save_path: str = None):
+        """Set the path where DAQ recordings will be saved"""
+        if save_path is None:
+            save_path = QFileDialog.getExistingDirectory(self, "Select Directory where DAQ data should be saved")
+        if save_path:
+            self.settings.save_path = save_path
+            self.log.debug(f'Save path set to {save_path}')
+            self.SavePath_label.setText(f'<b>Save path:</b> {save_path}')
+
     def save_settings(self):
         settings_file = QFileDialog.getSaveFileName(self, 'Save settings file', "",
                                                     "Settings files (*.json)")
@@ -543,7 +553,7 @@ class MCC_GUI(QMainWindow):
 
                 try:
                     if message["save_path"]:
-                        self.settings.save_path = message["save_path"]
+                        self.set_save_path(message["save_path"])
                 except KeyError:
                     pass
 

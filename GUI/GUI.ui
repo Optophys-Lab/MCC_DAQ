@@ -1957,6 +1957,27 @@ REMOTE-mode</string>
      <string>Session_id</string>
     </property>
    </widget>
+   <widget class="QLabel" name="SavePath_label">
+ <property name="geometry">
+  <rect>
+   <x>10</x>
+   <y>50</y>
+   <width>361</width>
+   <height>16</height>
+  </rect>
+ </property>
+ <property name="textFormat">
+  <enum>Qt::RichText</enum>
+ </property>
+ <property name="font">
+  <font>
+   <pointsize>7</pointsize>
+  </font>
+ </property>
+ <property name="text">
+  <string>&lt;b&gt;Save path:&lt;/b&gt; not set</string>
+ </property>
+</widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
