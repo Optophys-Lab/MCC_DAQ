@@ -5,14 +5,14 @@
     "channel_list": [
         {
             "id": 0,
-            "name": "StrainGauge1_left",
+            "name": "StrainGauge1_right",
             "active": true,
             "win": 6,
             "color": "#023eff"
         },
         {
             "id": 1,
-            "name": "StrainGauge2_right",
+            "name": "StrainGauge2_left",
             "active": true,
             "win": 7,
             "color": "#ff7c00"
@@ -61,14 +61,14 @@
         },
         {
             "id": 8,
-            "name": "ThresholdSG_left",
+            "name": "ThresholdSG_right",
             "active": true,
             "win": 6,
             "color": "#ffc400"
         },
         {
             "id": 9,
-            "name": "ThresholdSG_right",
+            "name": "ThresholdSG_left",
             "active": true,
             "win": 7,
             "color": "#00d7ff"
