@@ -134,7 +134,7 @@
             "time_base": "5 s"
         },
         "E": {
-            "Yrange": "+-5 V",
+            "Yrange": "+-3.3 V",
             "time_base": "20 s"
         },
         "F": {
