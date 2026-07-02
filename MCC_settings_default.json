@@ -1,144 +1,153 @@
 {
+    "save_path": "O:\\archive\\projects\\2022_optoroborat\\misc\\ZoeDebug\\TestRecordingsCamera",
     "scan_counters": false,
     "num_channels": 16,
     "channel_list": [
         {
             "id": 0,
-            "name": "NP_R",
+            "name": "StrainGauge1_right",
             "active": true,
-            "win": 0,
+            "win": 6,
             "color": "#023eff"
         },
         {
             "id": 1,
-            "name": "NP_C",
+            "name": "StrainGauge2_left",
             "active": true,
-            "win": 0,
+            "win": 7,
             "color": "#ff7c00"
         },
         {
             "id": 2,
-            "name": "Lick_spout",
+            "name": "StrainGauge3_lever",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#1ac938"
         },
         {
             "id": 3,
-            "name": "IR_beams",
+            "name": "Wheel",
             "active": true,
-            "win": 1,
+            "win": 0,
             "color": "#e8000b"
         },
         {
             "id": 4,
-            "name": "Cam_Trig",
+            "name": "Camera_Trigger",
             "active": true,
-            "win": 1,
+            "win": 0,
             "color": "#8b2be2"
         },
         {
             "id": 5,
-            "name": "Angle_R",
+            "name": "CapSensor_left",
             "active": true,
-            "win": 4,
+            "win": 1,
             "color": "#9f4800"
         },
         {
             "id": 6,
-            "name": "Angle_L",
+            "name": "CapSensor_right",
             "active": true,
-            "win": 5,
+            "win": 1,
             "color": "#f14cc1"
         },
         {
             "id": 7,
-            "name": "Barcodes",
+            "name": "ArduinoEvents",
             "active": true,
-            "win": 8,
+            "win": 5,
             "color": "#a3a3a3"
         },
         {
             "id": 8,
-            "name": "NP_L",
+            "name": "ThresholdSG_right",
             "active": true,
-            "win": 0,
+            "win": 6,
             "color": "#ffc400"
         },
         {
             "id": 9,
-            "name": "Reward_pump",
+            "name": "ThresholdSG_left",
             "active": true,
-            "win": 2,
+            "win": 7,
             "color": "#00d7ff"
         },
         {
             "id": 10,
-            "name": "Trial_Sync",
+            "name": "ThresholdSG_lever",
             "active": true,
-            "win": 2,
+            "win": 4,
             "color": "#023eff"
         },
         {
             "id": 11,
-            "name": "Laser4_Analog",
+            "name": "GoCue",
             "active": true,
-            "win": 9,
+            "win": 5,
             "color": "#ff7c00"
         },
         {
             "id": 12,
-            "name": "Laser2_Analog",
+            "name": "Vibrration",
             "active": true,
-            "win": 9,
+            "win": 5,
             "color": "#1ac938"
         },
         {
             "id": 13,
-            "name": "GateL",
+            "name": "rewardright",
             "active": true,
-            "win": 8,
+            "win": 7,
             "color": "#e8000b"
         },
         {
             "id": 14,
-            "name": "Laser2_TTL",
+            "name": "rewardleft",
             "active": true,
-            "win": 9,
+            "win": 6,
             "color": "#8b2be2"
         },
         {
             "id": 15,
-            "name": "Laser4_TTL",
+            "name": "synch_barcode",
             "active": true,
-            "win": 9,
+            "win": 5,
             "color": "#9f4800"
         }
     ],
-    "device": "USB-1608G_020A49C7",
-    "voltage_range": "BIP5VOLTS",
-    "pulse_rate": 30,
-    "sampling_rate": 2000,
+    "device": "USB-1608G",
+    "voltage_range": "BIP10VOLTS",
+    "pulse_rate": 10,
+    "sampling_rate": 1000,
     "graphsettings": {
         "A": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "B": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "C": {
-            "Yrange": "0-5 V",
+            "Yrange": "+-10 V",
             "time_base": "5 s"
         },
         "E": {
-            "Yrange": "0-5 V",
-            "time_base": "1 s"
+            "Yrange": "+-3.3 V",
+            "time_base": "20 s"
         },
         "F": {
-            "Yrange": "0-5 V",
-            "time_base": "1 s"
+            "Yrange": "+-5 V",
+            "time_base": "20 s"
+        },
+        "G": {
+            "Yrange": "+-5 V",
+            "time_base": "20 s"
+        },
+        "H": {
+            "Yrange": "+-5 V",
+            "time_base": "20 s"
         },
         "J": {
             "Yrange": "0-5 V",
@@ -156,6 +165,5 @@
             "Yrange": "+-10 V",
             "time_base": "20 s"
         }
-    },
-    "session_name": "20231212_r0093_wt_1448"
+    }
 }
