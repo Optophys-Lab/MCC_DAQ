@@ -56,7 +56,6 @@ class MCC_GUI(QMainWindow):
         self.session_path = None
         self.files_copied = False
         self.is_remote_ctr = False
-        self._reconnect_pending = False
         self.counter_timer = None
         self.rec_timer = None
         self.plot_timer = None
@@ -534,9 +533,6 @@ class MCC_GUI(QMainWindow):
         self.tabWidget.setTabEnabled(0, True)
 
     def check_and_parse_messages(self):
-        if self._reconnect_pending and self.socket_comm.connected:
-            self._reconnect_pending = False
-            self.socket_comm.send_json_message(SocketMessage.status_ready)
         message = self.socket_comm.read_json_message_fast_linebreak()
         if message:
             # parse message
@@ -582,7 +578,6 @@ class MCC_GUI(QMainWindow):
                     self.socket_comm.send_json_message(SocketMessage.respond_stop)
                     self.socket_comm.close_client_socket() #only close client conn
                     if self.is_remote_ctr:
-                        self._reconnect_pending = True
                         self.socket_comm.threaded_accept_connection() #listen for new client conn
                 else:
                     self.log.info("got message to stop, but nothing is running")
@@ -616,12 +611,7 @@ class MCC_GUI(QMainWindow):
 
             elif message['type'] == MessageType.disconnected.value:
                 self.log.info("got message that client disconnected")
-                if self.is_remote_ctr:
-                    # Stay in remote mode — wait for next client to reconnect
-                    self._reconnect_pending = True
-                    self.socket_comm.threaded_accept_connection()
-                else:
-                    self.exit_remote_mode()
+                self.exit_remote_mode()
 
             elif message['type'] == MessageType.copy_files.value:
                 self.log.debug('got message to copy files')
