@@ -611,6 +611,7 @@ class MCC_GUI(QMainWindow):
 
             elif message['type'] == MessageType.disconnected.value:
                 self.log.info("got message that client disconnected")
+                self.socket_comm.close_client_socket()
                 if self.is_remote_ctr:
                     self.socket_comm.threaded_accept_connection()
                 else:

@@ -165,6 +165,7 @@ class SocketComm:
         self.sock = None
         self._sock = None
         self._ssl_sock = None
+        self._recv_buffer = b''
         self.type = type
         self.host = host
         self.port = port
@@ -207,6 +208,7 @@ class SocketComm:
                 if ready:
                     self.ssl_sock, self.addr = self._ssl_sock.accept()
                     self.ssl_sock.settimeout(0.1)
+                    self._recv_buffer = b''
                     self.connected = True
                     self.log.info(f"Connected to {self.addr}")
                     break
@@ -215,6 +217,7 @@ class SocketComm:
                 if ready:
                     self.sock, self.addr = self._sock.accept()
                     self.sock.settimeout(0.1)
+                    self._recv_buffer = b''
                     self.connected = True
                     self.log.info(f"Connected to {self.addr}")
                     break
@@ -265,6 +268,7 @@ class SocketComm:
         if self._sock:
             self._sock.close()
             self._sock = None #clears the reference
+        self._recv_buffer = b''
         self.connected = False
 
     def close_client_socket(self):
@@ -272,11 +276,14 @@ class SocketComm:
         if self.sock: #client connection
             self.sock.close()
             self.sock = None
+        self._recv_buffer = b''
         self.connected = False
 
     def read_json_message(self) -> dict:
         try:
             message = self._recv_until(b'\n')
+            if message == -1:
+                return SocketMessage.client_disconnected
             if message is not None:
                 message = json.loads(message.decode())
             else:
@@ -347,19 +354,23 @@ class SocketComm:
             return -1
 
     def _recv_until(self, delimiter) -> bytes:
-        data = b''
         try:
-            if self.use_ssl:
-                while not data.endswith(delimiter):
-                    data += self.ssl_sock.recv(1)
-            else:
-                while not data.endswith(delimiter):
-                    data += self.sock.recv(1)
+            connection = self.ssl_sock if self.use_ssl else self.sock
+            while not self._recv_buffer.endswith(delimiter):
+                chunk = connection.recv(1)
+                if not chunk:
+                    self._recv_buffer = b''
+                    return -1
+                self._recv_buffer += chunk
         except socket.timeout:
-            data = None
+            # A message may span timer callbacks; do not discard its prefix.
+            return None
         except (ConnectionResetError, ConnectionAbortedError, OSError):
             self.log.warning("Client disconnected")
-            data = -1
+            self._recv_buffer = b''
+            return -1
+        data = self._recv_buffer
+        self._recv_buffer = b''
         return data
 
     def _recv_all(self):
